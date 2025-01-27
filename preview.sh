@@ -10,9 +10,9 @@
 #    process_type  : single : Generate preview for the single file
 #                    all    : Generate previews for all files in the dir
 # DEPENDENCIES:
-#    imagemagick
-#    ffmpeg
-#    kitten icat (or other graphic protocols)
+#    - imagemagick
+#    - ffmpeg
+#    - kitten icat (or other graphic protocols)
 
 # --------------------------------------------------------------------------------
 # Consts
