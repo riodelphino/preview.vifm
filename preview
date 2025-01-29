@@ -60,6 +60,7 @@ function GetPrevAction() {
 function GeneratePreview() {
    local action=$1
    local file="$2"
+   # local async="$3"
    Log "function" "GeneratePreview() start for '$file'"
 
    # Get preview filename (hash)
@@ -69,9 +70,9 @@ function GeneratePreview() {
    # Generate preview
    if [ ! -f "$preview_path" ]; then
       if [[ $action == "image" ]]; then
-         magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_RESIZE "$preview_path" &>/dev/null
+         magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_RESIZE "$preview_path" &>/dev/null # '&' at last works async ?
       elif [[ $action == "video" ]]; then
-         ffmpeg -y -i "$file" -vf "select='eq(n,$VIDEO_FRAME)',scale=$VIDEO_SCALE" -frames:v 1 "$preview_path" &>/dev/null
+         ffmpeg -y -i "$file" -vf "select='eq(n,$VIDEO_FRAME)',scale=$VIDEO_SCALE" -frames:v 1 "$preview_path" &>/dev/null # '&' at last works async ?
       else
          Log "ERROR" "[action] '$action' not matched."
       fi
@@ -106,7 +107,7 @@ function GeneratePreviewAll() {
          # Only proceed if $file is a regular file
          if [[ -f "$file" ]]; then
             Log "file" "$file"
-            local preview=$(GeneratePreview $action "$file") # Execute without echo
+            local preview=$(GeneratePreview $action "$file" &) # Execute without echo
             ((cnt++))
             Log 'cnt' "$cnt files processed"
          fi
@@ -185,13 +186,13 @@ function Main() {
    # ----- [action]: others
 
    # Generate preview for selected file
-   local preview_path=$(GeneratePreview $action "$file")
+   local preview_path=$(GeneratePreview $action "$file" &) # async not works...
 
    # Show preview
    Show "$preview_path"
 
    # Generate previews for pattern matched files in cur_dir
-   local processed_cnt=$(GeneratePreviewAll $action "$patterns")
+   local processed_cnt=$(GeneratePreviewAll $action "$patterns" &) # async not works...
 
    # Record current dir & action
    SetPrevDir

@@ -8,7 +8,7 @@ A previewing script for image/video on vifm.
    - Image preview
    - Video preview (as jpg)
    - Cache files with hash filename (for faster viewing)
-   - Async generation for all files in current dir
+   - Generation for all files in current dir
    - Previewing commands are modifiable. ex.) kitten icat, img2sixel, imgcat, etc. But not tested.
    - Logging if needed
 
@@ -27,7 +27,7 @@ A previewing script for image/video on vifm.
 
 ```txt
 USAGE:
-   ./preview.sh [action] [file] [pw] [ph] [px] [py] [patterns]
+   preview [action] [file] [pw] [ph] [px] [py] [patterns]
 
 ARGS:
    action    : clear | image | video ...
@@ -53,9 +53,6 @@ DEPENDENCIES:
 ```
 
 ## Install
-
-FIXME: install/uninstall by MakeFile like
-[https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile](https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile)
 
 ```bash
 cd ~/.config/vifm/scripts
@@ -92,8 +89,6 @@ Then, remember to execute `source ~/.zshrc` in terminal
 Add code to `~/.config/vifmrc`
 
 ```vim
-
-
 " For images
 let $IMAGE_PATTERNS = '*.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm,*.avif,*.webp,*.heic'
 fileviewer {*.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm,*.avif,*.webp,*.heic},<image/*>
@@ -116,8 +111,10 @@ fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[ic
 > `%pc` is just a delimiter, between displaying command and cleaning command.
 
 
-## Known problems
+## Known problems & TODO
 
-- [ ] Freeze the vifm, until the async(?) generation of all preview images in dir is complete.
-
+- [ ] Async generation not works
+   - [ ] It freeze the vifm, until the generation of all preview images in dir is complete.
+- [ ] Move enviromental variables to .env
+- [ ] install/uninstall by MakeFile like [https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile](https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile)
 
