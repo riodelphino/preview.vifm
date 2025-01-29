@@ -1,0 +1,248 @@
+#!/bin/bash
+
+# --------------------------------------------------------------------------------
+# Consts
+# --------------------------------------------------------------------------------
+
+# Images
+IMAGE_QUALITY=80
+IMAGE_RESIZE="600x600" # the size of vifm window on full screen
+# IMAGE_RESIZE="1376x1617" # Measured exact size for me, then remove '--scale-up' option from 'kitten icat'
+
+# Videos
+VIDEO_FRAME=1000      # frame num for cut, from the movie's start
+VIDEO_SCALE="640:360" # width:height
+# VIDEO_SCALE="1376:774" # Measured exact size for me, then remove '--scale-up' option from 'kitten icat'
+
+# --------------------------------------------------------------------------------
+# Functions
+# --------------------------------------------------------------------------------
+
+# Loging
+function Log() {
+   local label="$1"
+   local value="$2"
+   local length=20
+   if [[ $log_enabled == 1 ]]; then
+      printf "%-${length}s: %s\n" "$label" "$value" >>"$log_file"
+   fi
+}
+
+# Set current directory
+function SetPrevDir() {
+   echo $cur_dir >"$prev_dir_file"
+}
+
+# Set current action
+function SetPrevAction() {
+   echo $action >"$prev_action_file"
+}
+
+# Get previous directory
+function GetPrevDir() {
+   if [[ -f "$prev_dir_file" ]]; then
+      cat "$prev_dir_file"
+   else
+      echo ""
+   fi
+}
+
+# Get previous action
+function GetPrevAction() {
+   if [ -f "$prev_action_file" ]; then
+      cat "$prev_action_file"
+   else
+      echo ""
+   fi
+}
+
+# Generate preview & return the hash path
+function GeneratePreview() {
+   local action=$1
+   local file="$2"
+   # local async="$3"
+   Log "function" "GeneratePreview() start for '$file'"
+
+   # Get preview filename (hash)
+   local hash=$(echo $(realpath "$file") | sha256sum | cut -d' ' -f1) # get hash
+   local preview_path="$cache_dir/$hash.jpg"                          # preview path
+
+   # Generate preview
+   if [ ! -f "$preview_path" ]; then
+      if [[ $action == "image" ]]; then
+         magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_RESIZE "$preview_path" &>/dev/null # '&' at last works async ?
+      elif [[ $action == "video" ]]; then
+         ffmpeg -y -i "$file" -vf "select='eq(n,$VIDEO_FRAME)',scale=$VIDEO_SCALE" -frames:v 1 "$preview_path" &>/dev/null # '&' at last works async ?
+      else
+         Log "ERROR" "[action] '$action' not matched."
+      fi
+   fi
+   Log "preview_path" "$preview_path"
+
+   echo $preview_path
+   Log "function" "GeneratePreview() processed '$file'"
+}
+
+# Generate previews for all matched files in dir
+function GeneratePreviewAll() {
+   Log "prev_action" "$prev_action"
+   Log "prev_dir" "$prev_dir"
+   if [[ "$action" == "$prev_action" && "$cur_dir" == "$prev_dir" ]]; then # Only if action & dir is different from previous
+      Log "function" "Skipped GeneratePreviewAll(), for the action & dir are same as previous"
+      return 1
+   fi
+
+   Log "function" "GeneratePreviewAll() started in '$cur_dir'"
+
+   local action=$1
+   local patterns="$2"
+   local cnt=0
+
+   # List files in the directory and loop through each pattern
+   IFS=',' read -r -a pat_array <<<"$patterns"
+   for pat in "${pat_array[@]}"; do
+      Log "pat" "${pat}"
+      # For each pattern, find matching files
+      for file in "$cur_dir"/$pat; do
+         # Only proceed if $file is a regular file
+         if [[ -f "$file" ]]; then
+            Log "file" "$file"
+            local preview=$(GeneratePreview $action "$file" &) # Execute without echo
+            ((cnt++))
+            Log 'cnt' "$cnt files processed"
+         fi
+      done
+   done
+   wait
+   echo $cnt
+
+   Log "function" "GeneratePreviewAll() processed $cnt files"
+}
+
+# Replace % placeholders to actual values
+function ReplacePlaceholders() {
+   local cmd="$1"
+   local preview_path="$2"
+   Log "function" "ReplacePlaceholders() start"
+   Log "cmd_template" "$cmd"
+
+   # Replace
+   cmd="${cmd//%pw/$pw}"
+   cmd="${cmd//%ph/$ph}"
+   cmd="${cmd//%px/$px}"
+   cmd="${cmd//%py/$py}"
+   cmd="${cmd//%tty/$tty}"
+   if [[ $preview_path != '' ]]; then
+      cmd="${cmd//%file/$preview_path}"
+   fi
+
+   echo "$cmd"
+   Log "cmd_replaced" "$cmd"
+   Log "function" "ReplacePlaceholders() end"
+}
+
+# Clear
+function Clear() {
+   Log "function" "clear start"
+
+   local cmd_clear=$(ReplacePlaceholders "$cmd_clear_template" "")
+   sh -c "$cmd_clear"
+
+   Log "function" "clear end"
+}
+
+# Show preview
+function Show() {
+   local preview_path="$1"
+   local cmd_show=$(ReplacePlaceholders "$cmd_show_template" "$preview_path")
+   sh -c "$cmd_show"
+}
+
+# --------------------------------------------------------------------------------
+# Main script
+# --------------------------------------------------------------------------------
+
+function Main() {
+   # Logging
+   Log "start" "preview command start ----------------------------------------------------------"
+   Log "action" "$action"
+   Log "filename" "$file"
+   Log "size" "$pw x $ph"
+   Log "pos" "$px x $py"
+   Log "prev_dir" "$prev_dir"
+   Log "cur_dir" "$cur_dir"
+   Log "cmd_show_template" "$cmd_show_template"
+   Log "cmd_clear_template" "$cmd_clear_template"
+
+   # Create cache directory
+   mkdir -p "$cache_dir"
+
+   # ----- [action]: clear
+   if [[ $action == "clear" ]]; then # quick & first not to loss time
+      Clear
+      exit
+   fi
+
+   # ----- [action]: others
+
+   # Generate preview for selected file
+   local preview_path=$(GeneratePreview $action "$file" &) # async not works...
+
+   # Show preview
+   Show "$preview_path"
+
+   # Generate previews for pattern matched files in cur_dir
+   local processed_cnt=$(GeneratePreviewAll $action "$patterns" &) # async not works...
+
+   # Record current dir & action
+   SetPrevDir
+   SetPrevAction
+}
+
+# --------------------------------------------------------------------------------
+# Global variables
+# --------------------------------------------------------------------------------
+
+# Get args
+action=$1
+file=$2
+pw=$3
+ph=$4
+px=$5
+py=$6
+patterns=$7
+
+# Adjust args
+file="${file//\\ / }" # replate '\ ' to ' '
+# patterns="${patterns//,/ }" # replace ',' to ' '
+
+# Get env
+cache_dir=$VIFM_PREVIEW_CACHE_DIR
+log_enabled=$VIFM_PREVIEW_LOG_ENABLED
+tty=$VIFM_PREVIEW_TTY
+uid=$VIFM_PREVIEW_UID
+cmd_show_template=$VIFM_PREVIEW_SHOW
+cmd_clear_template=$VIFM_PREVIEW_CLEAR
+
+# Omit for action:clear to cause error
+# # Validate
+# if [ ! -f "$file" ]; then
+#    Log "ERROR" "[filename] '$file' not exists"
+#    # exit
+# fi
+
+# path for log
+log_file="$cache_dir/log"
+# path for saving previous dir & action
+prev_action_file="$cache_dir/prev_action"
+prev_dir_file="$cache_dir/prev_dir"
+
+# previous/current directories
+cur_dir=$(dirname "$(realpath "$file")")
+prev_dir=$(GetPrevDir)
+
+# previous action
+prev_action=$(GetPrevAction)
+
+# Execute Main()
+Main
