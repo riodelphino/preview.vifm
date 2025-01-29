@@ -49,7 +49,7 @@ git clone https://github.com/riodelphino/preview.vifm/
 
 ## Setup sample
 
-Add below code to `~/.config/vifmrc`
+Add below code to `~/.config/vifmrc`  
 (Sorry for dirty codes. I was unable to resolve the tty error when running kitten icat from within a script.)
 
 ```vim
