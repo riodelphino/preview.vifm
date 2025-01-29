@@ -1,6 +1,6 @@
-# preview.sh
+# preview.vifm
 
-A previewing support script for image/video on vifm.
+A previewing script for image/video on vifm.
 
 
 ## Features
@@ -9,7 +9,7 @@ A previewing support script for image/video on vifm.
    - Video preview (as jpg)
    - Cache files with hash filename (for faster viewing)
    - Async generation for all files in current dir
-   - Previewing commands are modifiable. ex.) kitten icat, img2sixel, imgcat, etc.
+   - Previewing commands are modifiable. ex.) kitten icat, img2sixel, imgcat, etc. But not tested.
    - Logging if needed
 
 ## Ensured to work on
@@ -39,13 +39,12 @@ ARGS:
    patterns  : file patterns (delimiter = ',')
 
 SAMPLE CODE:
-   Clear images:
+   Clear:
       preview clear
-   Show image preview:
+   For images:
       preview image %c %pw %ph %px %py '*.jpg,*.png'
-   Show video preview:
+   For videos:
       preview video %c %pw %ph %px %py '*.mp4,*.mov'
-
 
 DEPENDENCIES:
    - imagemagick
@@ -61,7 +60,7 @@ FIXME: install/uninstall by MakeFile like
 ```bash
 cd ~/.config/vifm/scripts
 git clone https://github.com/riodelphino/preview.vifm/
-ln -s preview.vifm/preview preview # vifm do not read scripts's sub dir, so link it.
+ln -s preview.vifm/preview preview # vifm do not read scripts's sub dir somewhy, so link it.
 ```
 
 ## Setup
@@ -111,7 +110,7 @@ fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[ic
 ```
 
 > [!Note]
-> Variable expansion is not allowed in file pattern list, like `fileviwer {$VIDEO_PATTERNS}`. It's redundant...
+> Variable expansion is not allowed in file pattern list, like `fileviwer {$VIDEO_PATTERNS}`. Hmmm, It's redundant...
 
 > [!Note]
 > `%pc` is just a delimiter, between displaying command and cleaning command.
@@ -119,6 +118,6 @@ fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[ic
 
 ## Known problems
 
-- [ ] Freeze the vifm, until the async generation of all preview images in dir is complete.
+- [ ] Freeze the vifm, until the async(?) generation of all preview images in dir is complete.
 
 
