@@ -9,7 +9,7 @@ A previewing support script for image/video on vifm.
    - Video preview (as jpg)
    - Cache files with hash filename (for faster viewing)
    - Async generation for all files in current dir
-   - Previewing commands are modifiable (kitten icat, img2sixel, imgcat, e.t.c.)
+   - Previewing commands are modifiable. ex.) kitten icat, img2sixel, imgcat, etc.
    - Logging if needed
 
 ## Ensured to work on
@@ -36,7 +36,7 @@ ARGS:
    ph        : panel height
    px        : panel x
    py        : panel y
-   patterns  : file patterns
+   patterns  : file patterns (delimiter = ',')
 
 SAMPLE CODE:
    Clear images:
@@ -72,6 +72,8 @@ ln -s preview.vifm/preview preview # vifm do not read scripts's sub dir, so link
 Add code to `~/.zshrc` or `~/.bashrc`
 ```bash
 # preview.vifm
+export VIFM_PREVIEW_CACHE_DIR="$HOME/.cache/vifm/preview"
+export VIFM_PREVIEW_LOG_ENABLED=0 # 0: No logging | 1: Logging
 export VIFM_PREVIEW_UID="$(uuidgen)"
 export VIFM_PREVIEW_TTY="$(tty)"
 export VIFM_PREVIEW_SHOW='kitten icat --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
@@ -113,5 +115,10 @@ fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[ic
 
 > [!Note]
 > `%pc` is just a delimiter, between displaying command and cleaning command.
+
+
+## Known problems
+
+- [ ] Freeze the vifm, until the async generation of all preview images in dir is complete.
 
 
