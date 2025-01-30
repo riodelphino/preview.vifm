@@ -5,22 +5,39 @@ A previewing script for image/video on vifm.
 
 ## Features
 
-   - Image preview
-   - Video preview (as jpg)
-   - Cache files with hash filename (for faster viewing)
-   - Generation for all files in current dir
-   - Previewing commands are modifiable. ex.) kitten icat, img2sixel, imgcat, etc. But not tested.
+   - Preview image/video as jpg
+   - Faster previewing with caching files
+   - Batch generation for all matched files in current dir
+   - Modifiable previewing commands. ex.) kitten icat, img2sixel, imgcat, etc. But not tested.
    - Logging if needed
 
-## Ensured to work on
+## Ensured to work
 
-   - MacOS
-      - kitty
-      - tmux on kitty
-   
-   > [!Warning]
-   > Not tested in ohter OS or other terminal apps.
+- MacOS
+  - [vifm](https://github.com/vifm/vifm) < kitty
+  - [vifm](https://github.com/vifm/vifm) < tmux < kitty
 
+> [!Warning]
+> Not tested in ohter OS or terminal apps.
+
+## Not works
+
+- MacOS
+  - [vifm.vim](https://github.com/vifm/vifm.vim) or [fm.nvim](https://github.com/is0n/fm-nvim) < nvim < kitty
+     - Position out of place
+  - [vifm.vim](https://github.com/vifm/vifm.vim) or [fm.nvim](https://github.com/is0n/fm-nvim) < nvim < tmux < kitty
+     - `clear` not works at all
+     - Position out of place
+
+Disturbing with nvim.  
+ex.) Not works correctly with nvim plugins like [vifm.vim](https://github.com/vifm/vifm.vim) or [fm.nvim](https://github.com/is0n/fm-nvim).  
+Because of the position out of place & not working `clear` command.
+
+**Position out of place**
+Floating x,y pos | signcolumn | bufferline are the cause.
+
+**'clear' not works at all**
+The cause is Unknown.
 
 
 ## Command usage
@@ -111,8 +128,13 @@ fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[ic
 > `%pc` is just a delimiter, between displaying command and cleaning command.
 
 
-## Known problems & TODO
+## TODO & Known problems
 
+- [ ] Disturbance in nvim
+   - [ ] Omit previewing if in vifm on nvim?
+   - [ ] Or fix them 
+      - [ ] Maybe 'clear' not works
+      - [ ] Misalignment in px py
 - [ ] Async generation not works
    - [ ] It freeze the vifm, until the generation of all preview images in dir is complete.
 - [ ] Move enviromental variables to .env
