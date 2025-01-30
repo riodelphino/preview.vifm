@@ -1,5 +1,31 @@
 #!/bin/bash
 
+# NOT WORKS
+# if ps -p $$ | grep -q 'nvim'; then
+#    echo "vifm is running inside Neovim" >"$HOME/.cache/vifm/preview/ps"
+# else
+#    echo "vifm is not running inside Neovim" >"$HOME/.cache/vifm/preview/ps"
+# fi
+
+check_environment() {
+   # nvim での起動確認
+   if [ -n "$NVIM" ]; then
+      echo "nvim"
+      return
+   fi
+
+   if [ -n "$TMUX" ]; then
+      echo "tmux"
+   else
+      echo "terminal"
+   fi
+   return
+
+   echo "unknown"
+}
+
+echo $(check_environment) >"$HOME/.cache/vifm/preview/ps"
+
 # --------------------------------------------------------------------------------
 # Consts
 # --------------------------------------------------------------------------------
