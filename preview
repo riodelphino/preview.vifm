@@ -143,28 +143,27 @@ function ReplacePlaceholders() {
 
 # Clear
 function Clear() {
-   Log "function" "clear start"
-
+   Log "function" "Clear() start"
    local cmd_clear=$(ReplacePlaceholders "$cmd_clear_template" "")
    sh -c "$cmd_clear"
-
-   Log "function" "clear end"
+   Log "function" "Clear() end"
 }
 
 # Show preview
 function Show() {
+   Log "function" "Show() start"
    local preview_path="$1"
    local cmd_show=$(ReplacePlaceholders "$cmd_show_template" "$preview_path")
    sh -c "$cmd_show"
+   Log "function" "Show() end"
 }
 
 # --------------------------------------------------------------------------------
 # Main script
 # --------------------------------------------------------------------------------
-
 function Main() {
    # Logging
-   Log "start" "preview command start ----------------------------------------------------------"
+   Log "\nstart" "preview command start ----------------------------------------------------------"
    Log "action" "$action"
    Log "filename" "$file"
    Log "size" "$pw x $ph"

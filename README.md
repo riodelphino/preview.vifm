@@ -11,7 +11,9 @@ A previewing script for image/video on vifm.
    - Modifiable previewing commands. ex.) kitten icat, img2sixel, imgcat, etc. But not tested.
    - Logging if needed
 
+
 ## Ensured to work
+It works on kitty or tmux on kitty, in MacOS.
 
 - MacOS
   - [vifm](https://github.com/vifm/vifm) < kitty
@@ -20,23 +22,26 @@ A previewing script for image/video on vifm.
 > [!Warning]
 > Not tested in ohter OS or terminal apps.
 
-## Not works
+
+## Not fully functional
+
+The images are shown disturbed in nvim, with plugins like [vifm.vim](https://github.com/vifm/vifm.vim) or [fm.nvim](https://github.com/is0n/fm-nvim).  
+Because of the position out of place & not working `clear` command.
+
 
 - MacOS
   - [vifm.vim](https://github.com/vifm/vifm.vim) or [fm.nvim](https://github.com/is0n/fm-nvim) < nvim < kitty
-     - Position out of place
+     - A. Shown in out of place
   - [vifm.vim](https://github.com/vifm/vifm.vim) or [fm.nvim](https://github.com/is0n/fm-nvim) < nvim < tmux < kitty
-     - `clear` not works at all
-     - Position out of place
+     - A. Shown in out of place
+     - B. `clear` not works at all
 
-Disturbing with nvim.  
-ex.) Not works correctly with nvim plugins like [vifm.vim](https://github.com/vifm/vifm.vim) or [fm.nvim](https://github.com/is0n/fm-nvim).  
-Because of the position out of place & not working `clear` command.
+**A. Shown in out of place**
+Floating x/y pos | signcolumn | bufferline are the cause.  
+In full size window mode, adding `export $VIFM_PREVIEW_PX_ADJUST=1` & `export $VIFM_PREVIEW_PY_ADJUST=1` & applying them, might resolve it.  
+In floating window mode, getting the position x/y (=top/left) from the `win` might resolve it.  
 
-**Position out of place**
-Floating x,y pos | signcolumn | bufferline are the cause.
-
-**'clear' not works at all**
+**B. 'clear' not works at all**
 The cause is Unknown.
 
 
@@ -126,6 +131,15 @@ fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[ic
 
 > [!Note]
 > `%pc` is just a delimiter, between displaying command and cleaning command.
+
+
+## Technical info
+
+`tty` command returns the tty value like `/dev/ttys001` on a bare terminal or on a terminal with tmux.
+But `tty` command returns `not a tty` in `vifmrc` or `nvim`.  
+So I put the line `$VIFM_PREVIEW_TTY="$(tty)"` in `~/.zshrc` to pick up the the current terminal's tty at startup.
+
+Additionally, the preview function didn't work without using the `tty` like `--stdin=no` option of `kitten icat`.
 
 
 ## TODO & Known problems
