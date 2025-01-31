@@ -5,23 +5,47 @@ A previewing script for image/video on vifm.
 
 ## Features
 
-   - Image preview
-   - Video preview (as jpg)
-   - Cache files with hash filename (for faster viewing)
-   - Generation for all files in current dir
-   - Previewing commands are modifiable. ex.) kitten icat, img2sixel, imgcat, etc. But not tested.
-   - Logging if needed
-
-## Ensured to work on
-
-   - MacOS
-      - kitty
-      - tmux on kitty
-   
-   > [!Warning]
-   > Not tested in ohter OS or other terminal apps.
+   - Preview image/video as jpg
+   - Faster previewing with cache files
+   - Batch generation for all matched files in current dir
+   - Modifiable graphic protocol to preview
+   - Logging
 
 
+## Ensured to work
+
+- MacOS
+   - Without nvim  
+      ✓ [vifm](https://github.com/vifm/vifm) < kitty  
+      ✓ [vifm](https://github.com/vifm/vifm) < tmux < kitty  
+   - With nvim  
+      ✓ [vifm](https://github.com/vifm/vifm) < nvim < kitty  
+      △ [vifm](https://github.com/vifm/vifm) < nvim < tmux < kitty (`clear` not works)  
+
+> [!Warning]
+> Not tested in ohter OS or terminal apps.
+
+
+## Not fully functional
+
+The images are shown disturbed & overlapped in `vifm on nvim on tmux`, with plugins like [vifm.vim](https://github.com/vifm/vifm.vim) or [fm.nvim](https://github.com/is0n/fm-nvim).  
+Because of not working `clear` command.
+
+
+## Graphic protocols
+
+Works: `kitten icat`  
+Not tested: `timg`, `img2sixel`, `imgcat`, `chafa`, etc
+
+
+## Files
+
+```txt
+├── README.md      : this file  
+├── config         : config file  
+├── config.default : default config file  
+└── preview        : script  
+```
 
 ## Command usage
 
@@ -62,31 +86,83 @@ ln -s preview.vifm/preview preview # vifm do not read scripts's sub dir somewhy,
 
 ## Setup
 
+Follow these four steps.
 
-### in bash or zsh
 
-Add code to `~/.zshrc` or `~/.bashrc`
+### 1. zsh or bash
+
+Add this code to `~/.zshrc` or `~/.bashrc`
+
 ```bash
-# preview.vifm
-export VIFM_PREVIEW_CACHE_DIR="$HOME/.cache/vifm/preview"
-export VIFM_PREVIEW_LOG_ENABLED=0 # 0: No logging | 1: Logging
-export VIFM_PREVIEW_UID="$(uuidgen)"
+export VIFM_PREVIEW_UUID="$(uuidgen)"
 export VIFM_PREVIEW_TTY="$(tty)"
-export VIFM_PREVIEW_SHOW='kitten icat --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
-export VIFM_PREVIEW_CLEAR='kitten icat --clear --silent %N >%tty <%tty &'
 ```
-Then, remember to execute `source ~/.zshrc` in terminal
+
+This code records `tty` like `/dev/tts001` on terminal init.  
+`UUID` is set for future expansion.
+
+Remember to execute `source ~/.zshrc` in terminal.
+
+> [!Note]
+> Only terminal returns `tty` correctry.
+> `tty` command on vifmrc returns error, like `not a tty`.
+> That's the reason for inserting this code.
+
+
+### 2. Config
+
+Default settings are in `config.default`.  
+Copy it & rename to `config`, then modify it.
+
+If `config` not exists, plugin uses `config.default`.
+
+config.default:
+```bash
+#!/bin/bash
+
+# Cache
+if [ -n "$XDG_CACHE_HOME" ]; then
+   CACHE_DIR="$XDG_CACHE_HOME/vifm/preview"
+else
+   CACHE_DIR="$HOME/.cache/vifm/preview"
+fi
+
+# Log
+LOG_ENABLED=0 # 0: No logging | 1: Logging (cause timeloss)
+
+# Preview command
+SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
+CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
+
+# Images
+IMAGE_QUALITY=80
+IMAGE_RESIZE="600x600" # the size of vifm window on full screen
+# IMAGE_RESIZE="1376x1617" # Measured exact size for me, then remove '--scale-up' option from 'kitten icat'
+
+# Videos
+VIDEO_FRAME=1000      # frame num for cut, from the movie's start
+VIDEO_SCALE="640:360" # width:height
+# VIDEO_SCALE="1376:774" # Measured exact size for me, then remove '--scale-up' option from 'kitten icat'
+```
 
 > [!Note]
 > %pw %ph %px %py %file %tty, are replaced to the actual values in preview command.
 
-> [!Note]
-> Only terminal returns `tty` correctry. `tty` command on vifmrc returns error, like `not a tty`. That's why using enviromental variables on terminal's init.
 
 
-### in vifmrc
+#### Sample for other graphic protocols
 
-Add code to `~/.config/vifmrc`
+```bash
+# --- timg
+# Sorry, NOT WORKS CORRECTLY. It shows disturbed color & text block images.
+SHOW_CMD_TEMPLATE='timg -p sixel -g %pwx%ph "%file"'
+CLEAR_CMD_TEMPLATE='timg -clear'
+```
+
+
+### 3. vifmrc
+
+Add this code to `~/.config/vifmrc`
 
 ```vim
 " For images
@@ -111,10 +187,60 @@ fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[ic
 > `%pc` is just a delimiter, between displaying command and cleaning command.
 
 
-## Known problems & TODO
+### 4. nvim
 
-- [ ] Async generation not works
-   - [ ] It freeze the vifm, until the generation of all preview images in dir is complete.
+If you use vifm on nvim, set these code to `init.lua`.
+```lua
+-- init.lua
+function get_window_position()
+   local win = vim.api.nvim_get_current_win()
+   local win_info = vim.api.nvim_win_get_config(win)
+   local left = win_info.col
+   local top = win_info.row
+   local width = win_info.width
+   local height = win_info.height
+   return left, top, width, height
+end
+
+vim.api.nvim_create_autocmd({ 'BufEnter' }, {
+   callback = function()
+      local x, y, w, h = get_window_position()
+      vim.env.VIFM_PREVIEW_WIN_X = x or 0
+      vim.env.VIFM_PREVIEW_WIN_Y = y or 0
+      vim.env.VIFM_PREVIEW_WIN_W = w or 0
+      vim.env.VIFM_PREVIEW_WIN_H = h or 0
+      -- print(string.format('%dx%d @ %dx%d', w, h, x, y)) -- for check
+   end,
+})
+```
+This saves x,y,w,h values to environmental variables, and `preview` command uses them for adjusting showing position.
+
+
+## Known problems
+
+- [ ] 'clear' not works in `vifm < nvim < tmux`.
+- [ ] Async generation all files not works. It freeze `vifm` for a while.
+
+### (Resolved) tty
+
+`tty` command returns the tty value like `/dev/ttys001` on a bare terminal or on a terminal with tmux.
+But `tty` command returns `not a tty` in `vifmrc` or `nvim`.  
+**Resolved** by [this sh code](#1-zsh-or-bash)
+
+Additionally...
+Without the `tty` like `zsh -c 'setsid kitten icat --stdin=no --use-window-size $COLUMNS,$LINES,3000,2000 --transfer-mode=file myimage.png'` not works for me. 
+Though that sample code is on kitty official site.
+
+
+### (Resolved) Images are shown in out of place
+
+Floating x/y pos | signcolumn | bufferline are the cause.  
+Almost **resolved** by [this lua code](#4-nvim).  
+And `set signcolumn=auto` is recommended in nvim's `init.lua`.
+
+
+## TODO
+
 - [ ] Move enviromental variables to .env
 - [ ] install/uninstall by MakeFile like [https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile](https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile)
 
