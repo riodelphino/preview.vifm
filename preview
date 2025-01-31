@@ -7,24 +7,22 @@
 #    echo "vifm is not running inside Neovim" >"$HOME/.cache/vifm/preview/ps"
 # fi
 
-check_environment() {
-   # nvim での起動確認
+# get enviroment as array
+# like ['nvim', 'tmux'] or ['nvim', 'terminal'] or ['terminal'] or ['tmux']
+GetEnvironment() {
+   local env_array=()
    if [ -n "$NVIM" ]; then
-      echo "nvim"
-      return
+      env_array+=("nvim")
    fi
-
    if [ -n "$TMUX" ]; then
-      echo "tmux"
+      env_array+=("tmux")
    else
-      echo "terminal"
+      env_array+=("terminal")
    fi
-   return
-
-   echo "unknown"
+   echo "${env_array[@]}"
 }
 
-echo $(check_environment) >"$HOME/.cache/vifm/preview/ps"
+echo $(GetEnvironment) >"$HOME/.cache/vifm/preview/ps"
 
 # --------------------------------------------------------------------------------
 # Consts
