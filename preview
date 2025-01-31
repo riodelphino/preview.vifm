@@ -52,18 +52,19 @@ GetEnvironment() {
 
 # Set current directory
 function SetPrevDir() {
-   echo $cur_dir >"$prev_dir_file"
+   printf "%s" "$cur_dir" >"$prev_dir_file"
 }
 
 # Set current action
 function SetPrevAction() {
-   echo $action >"$prev_action_file"
+   echo "$action" >"$prev_action_file"
 }
 
 # Get previous directory
 function GetPrevDir() {
    if [[ -f "$prev_dir_file" ]]; then
-      cat "$prev_dir_file"
+      IFS= read -r prev_dir <"$prev_dir_file"
+      echo -n "$prev_dir" # 末尾のスペースを保持
    else
       echo ""
    fi
@@ -106,8 +107,7 @@ function GeneratePreview() {
 
    # Generate preview
    if [ ! -f "$preview_path" ]; then
-      # local nvim=$(IsArrayContained environment ("nvim"))
-      local nvim=false
+      local nvim=$(IsArrayContained environment ("nvim"))
       if [[ ! $nvim ]]; then
          # not on nvim
          if [[ $action == "image" ]]; then
@@ -120,7 +120,7 @@ function GeneratePreview() {
       else
          # on nvim
          # Do nothing
-         Log "fallback" "vifm on nvim"
+         Log "fallback" "Skip generating (vifm on nvim)"
       fi
    fi
    Log "preview_path" "$preview_path"
@@ -298,8 +298,7 @@ prev_dir=$(GetPrevDir)
 prev_action=$(GetPrevAction)
 
 # environment, like nvim, tmux, terminal
-# envrionment=$(GetEnvironment)
-environment=("tmux")
+envrionment=$(GetEnvironment)
 
 # Execute Main()
 Main
