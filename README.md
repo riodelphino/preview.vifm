@@ -13,11 +13,14 @@ A previewing script for image/video on vifm.
 
 
 ## Ensured to work
-It works on kitty or tmux on kitty, in MacOS.
 
 - MacOS
-  - [vifm](https://github.com/vifm/vifm) < kitty
-  - [vifm](https://github.com/vifm/vifm) < tmux < kitty
+   - Without nvim
+      - [x] [vifm](https://github.com/vifm/vifm) < kitty
+      - [x] [vifm](https://github.com/vifm/vifm) < tmux < kitty
+   - With nvim
+      - [x] [vifm](https://github.com/vifm/vifm) < nvim < kitty
+      - [ ] [vifm](https://github.com/vifm/vifm) < nvim < tmux < kitty (`clear` not works)
 
 > [!Warning]
 > Not tested in ohter OS or terminal apps.
@@ -25,36 +28,24 @@ It works on kitty or tmux on kitty, in MacOS.
 
 ## Not fully functional
 
-The images are shown disturbed in nvim, with plugins like [vifm.vim](https://github.com/vifm/vifm.vim) or [fm.nvim](https://github.com/is0n/fm-nvim).  
-Because of the position out of place & not working `clear` command.
-
-
-- MacOS
-  - [vifm.vim](https://github.com/vifm/vifm.vim) or [fm.nvim](https://github.com/is0n/fm-nvim) < nvim < tmux < kitty
-     - A. `clear` not works at all
-
-**A. 'clear' not works at all**
-The cause is Unknown.
-
-**(Resolved) Shown in out of place**
-Floating x/y pos | signcolumn | bufferline are the cause.  
-In full size window mode, adding `export $VIFM_PREVIEW_PX_ADJUST=1` & `export $VIFM_PREVIEW_PY_ADJUST=1` & applying them, might resolve it.  
-In floating window mode, getting the position x/y (=top/left) from the `win` might resolve it.  
+The images are shown disturbed & overlapped in `vifm on nvim on tmux`, with plugins like [vifm.vim](https://github.com/vifm/vifm.vim) or [fm.nvim](https://github.com/is0n/fm-nvim).  
+Because of not working `clear` command.
 
 
 ## Graphic protocols
 
-Works: `kitten icat`
+Works: `kitten icat`  
 Not tested: `timg`, `img2sixel`, `imgcat`, `chafa`, etc
 
 
 ## Files
 
-├── README.md      : this file
-├── config         : config file
-├── config.default : default config file
-└── preview        : script
-
+```txt
+├── README.md      : this file  
+├── config         : config file  
+├── config.default : default config file  
+└── preview        : script  
+```
 
 ## Command usage
 
@@ -95,10 +86,12 @@ ln -s preview.vifm/preview preview # vifm do not read scripts's sub dir somewhy,
 
 ## Setup
 
+Follow these four steps.
 
-### .zshrc or .bashrc
 
-Add the code to `~/.zshrc` or `~/.bashrc`
+### 1 zsh or bash
+
+Add this code to `~/.zshrc` or `~/.bashrc`
 
 ```bash
 export VIFM_PREVIEW_UUID="$(uuidgen)"
@@ -111,11 +104,12 @@ This code records `tty` like `/dev/tts001` on terminal init.
 Remember to execute `source ~/.zshrc` in terminal.
 
 > [!Note]
-> Only terminal returns `tty` correctry. `tty` command on vifmrc returns error, like `not a tty`.
+> Only terminal returns `tty` correctry.
+> `tty` command on vifmrc returns error, like `not a tty`.
 > That's the reason for inserting this code.
 
 
-## Config
+### 2 Config
 
 Default settings are in `config.default`.  
 Copy it & rename to `config`, then modify it.
@@ -134,7 +128,7 @@ else
 fi
 
 # Log
-LOG_ENABLED=1 # 0: No logging | 1: Logging (cause timeloss)
+LOG_ENABLED=0 # 0: No logging | 1: Logging (cause timeloss)
 
 # Preview command
 SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
@@ -156,19 +150,19 @@ VIDEO_SCALE="640:360" # width:height
 
 
 
-### Sample
+#### Sample for other graphic protocols
 
 ```bash
 # --- timg
-# Not works correctly. It shows disturbed color & text block images.
+# Sorry, NOT WORKS CORRECTLY. It shows disturbed color & text block images.
 SHOW_CMD_TEMPLATE='timg -p sixel -g %pwx%ph "%file"'
 CLEAR_CMD_TEMPLATE='timg -clear'
 ```
 
 
-### in vifmrc
+### 3 vifmrc
 
-Add code to `~/.config/vifmrc`
+Add this code to `~/.config/vifmrc`
 
 ```vim
 " For images
@@ -192,7 +186,9 @@ fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[ic
 > [!Note]
 > `%pc` is just a delimiter, between displaying command and cleaning command.
 
-### in init.lua of nvim
+
+### 4 for nvim
+
 If you use vifm on nvim, set these code to `init.lua`.
 ```lua
 -- init.lua
@@ -217,27 +213,34 @@ vim.api.nvim_create_autocmd({ 'BufEnter' }, {
    end,
 })
 ```
-This saves x,y,w,h values to environmental variables, and `preview` uses them for adjusting showing position.
+This saves x,y,w,h values to environmental variables, and `preview` command uses them for adjusting showing position.
 
 
-## Technical info
+## Known problems
+
+- [ ] 'clear' not works in `vifm < nvim < tmux`.
+- [ ] Async all files generation not works
+
+### (Resolved) tty
 
 `tty` command returns the tty value like `/dev/ttys001` on a bare terminal or on a terminal with tmux.
 But `tty` command returns `not a tty` in `vifmrc` or `nvim`.  
-So I put the line `$VIFM_PREVIEW_TTY="$(tty)"` in `~/.zshrc` to pick up the the current terminal's tty at startup.
+**Resolved** by [this sh code](#1-zsh-or-bash)
 
-Additionally, the preview function didn't work without using the `tty` like `--stdin=no` option of `kitten icat`.
+Additionally...
+Without the `tty` like `zsh -c 'setsid kitten icat --stdin=no --use-window-size $COLUMNS,$LINES,3000,2000 --transfer-mode=file myimage.png'` not works for me. 
+Though that sample code is on kitty official site.
 
 
-## TODO & Known problems
+### (Resolved) Images are shown in out of place
 
-- [ ] Disturbance in nvim
-   - [ ] Omit previewing if in vifm on nvim?
-   - [ ] Or fix them 
-      - [ ] Maybe 'clear' not works
-      - [ ] Misalignment in px py
-- [ ] Async generation not works
-   - [ ] It freeze the vifm, until the generation of all preview images in dir is complete.
+Floating x/y pos | signcolumn | bufferline are the cause.  
+Almost **resolved** by [this lua code](#4-for-nvim).  
+And `set signcolumn=auto` is recommended in nvim's `init.lua`.
+
+
+## TODO
+
 - [ ] Move enviromental variables to .env
 - [ ] install/uninstall by MakeFile like [https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile](https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile)
 

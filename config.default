@@ -8,7 +8,7 @@ else
 fi
 
 # Log
-LOG_ENABLED=1 # 0: No logging | 1: Logging (cause timeloss)
+LOG_ENABLED=0 # 0: No logging | 1: Logging (cause timeloss)
 
 # Preview command
 SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
