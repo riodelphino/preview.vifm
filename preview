@@ -7,23 +7,6 @@
 #    echo "vifm is not running inside Neovim" >"$HOME/.cache/vifm/preview/ps"
 # fi
 
-# get enviroment as array
-# like ['nvim', 'tmux'] or ['nvim', 'terminal'] or ['terminal'] or ['tmux']
-GetEnvironment() {
-   local env_array=()
-   if [ -n "$NVIM" ]; then
-      env_array+=("nvim")
-   fi
-   if [ -n "$TMUX" ]; then
-      env_array+=("tmux")
-   else
-      env_array+=("terminal")
-   fi
-   echo "${env_array[@]}"
-}
-
-echo $(GetEnvironment) >"$HOME/.cache/vifm/preview/ps"
-
 # --------------------------------------------------------------------------------
 # Consts
 # --------------------------------------------------------------------------------
@@ -50,6 +33,21 @@ function Log() {
    if [[ $log_enabled == 1 ]]; then
       printf "%-${length}s: %s\n" "$label" "$value" >>"$log_file"
    fi
+}
+
+# get environment as array
+# like ['nvim', 'tmux'] or ['nvim', 'terminal'] or ['terminal'] or ['tmux']
+GetEnvironment() {
+   local env_array=()
+   if [ -n "$NVIM" ]; then
+      env_array+=("nvim")
+   fi
+   if [ -n "$TMUX" ]; then
+      env_array+=("tmux")
+   else
+      env_array+=("terminal")
+   fi
+   echo "${env_array[@]}"
 }
 
 # Set current directory
@@ -80,6 +78,21 @@ function GetPrevAction() {
    fi
 }
 
+function IsArrayContained() {
+   source=$1
+   search=$2
+
+   found_all=true
+
+   for t in "${search[@]}"; do
+      if ! echo "${source[@]}" | grep -qw "$t"; then
+         found_all=false
+         break
+      fi
+   done
+   echo found_all
+}
+
 # Generate preview & return the hash path
 function GeneratePreview() {
    local action=$1
@@ -93,12 +106,21 @@ function GeneratePreview() {
 
    # Generate preview
    if [ ! -f "$preview_path" ]; then
-      if [[ $action == "image" ]]; then
-         magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_RESIZE "$preview_path" &>/dev/null # '&' at last works async ?
-      elif [[ $action == "video" ]]; then
-         ffmpeg -y -i "$file" -vf "select='eq(n,$VIDEO_FRAME)',scale=$VIDEO_SCALE" -frames:v 1 "$preview_path" &>/dev/null # '&' at last works async ?
+      # local nvim=$(IsArrayContained environment ("nvim"))
+      local nvim=false
+      if [[ ! $nvim ]]; then
+         # not on nvim
+         if [[ $action == "image" ]]; then
+            magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_RESIZE "$preview_path" &>/dev/null # '&' at last works async ?
+         elif [[ $action == "video" ]]; then
+            ffmpeg -y -i "$file" -vf "select='eq(n,$VIDEO_FRAME)',scale=$VIDEO_SCALE" -frames:v 1 "$preview_path" &>/dev/null # '&' at last works async ?
+         else
+            Log "ERROR" "[action] '$action' not matched."
+         fi
       else
-         Log "ERROR" "[action] '$action' not matched."
+         # on nvim
+         # Do nothing
+         Log "fallback" "vifm on nvim"
       fi
    fi
    Log "preview_path" "$preview_path"
@@ -176,9 +198,17 @@ function Clear() {
 # Show preview
 function Show() {
    Log "function" "Show() start"
-   local preview_path="$1"
-   local cmd_show=$(ReplacePlaceholders "$cmd_show_template" "$preview_path")
-   sh -c "$cmd_show"
+   if [[ ! $nvim ]]; then
+      # not on nvim
+      local preview_path="$1"
+      local cmd_show=$(ReplacePlaceholders "$cmd_show_template" "$preview_path")
+      sh -c "$cmd_show"
+   else
+      # on nvim
+      local cmd_show_fallback_template="echo '%c' >%tty <%tty"
+      local cmd_show=$(ReplacePlaceholders "$cmd_show_fallback_template" "")
+      sh -c "$cmd_show"
+   fi
    Log "function" "Show() end"
 }
 
@@ -266,6 +296,10 @@ prev_dir=$(GetPrevDir)
 
 # previous action
 prev_action=$(GetPrevAction)
+
+# environment, like nvim, tmux, terminal
+# envrionment=$(GetEnvironment)
+environment=("tmux")
 
 # Execute Main()
 Main

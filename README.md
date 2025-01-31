@@ -6,10 +6,10 @@ A previewing script for image/video on vifm.
 ## Features
 
    - Preview image/video as jpg
-   - Faster previewing with caching files
+   - Faster previewing with cache files
    - Batch generation for all matched files in current dir
-   - Modifiable previewing commands. ex.) kitten icat, img2sixel, imgcat, etc. But not tested.
-   - Logging if needed
+   - Modifiable graphic protocol to preview
+   - Logging
 
 
 ## Ensured to work
@@ -43,6 +43,12 @@ In floating window mode, getting the position x/y (=top/left) from the `win` mig
 
 **B. 'clear' not works at all**
 The cause is Unknown.
+
+
+## Graphic protocols
+
+Works: `kitten icat`
+Not tested: `timg`, `img2sixel`, `imgcat`, `chafa`, etc
 
 
 ## Command usage
