@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Cache
+if [ -n "$XDG_CACHE_HOME" ]; then
+   CACHE_DIR="$XDG_CACHE_HOME/vifm/preview"
+else
+   CACHE_DIR="$HOME/.cache/vifm/preview"
+fi
+
+# Log
+LOG_ENABLED=1 # 0: No logging | 1: Logging (cause timeloss)
+
+# Preview command
+SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
+CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
+
+# Images
+IMAGE_QUALITY=80
+IMAGE_RESIZE="600x600" # the size of vifm window on full screen
+# Set measured exact size for your vifm window, then remove '--scale-up' option from 'kitten icat'
+# It allows faster previw, but increases cache file size, and size might conflict between bare vifm and vifm on nvim.
+# IMAGE_RESIZE="1376x1617"
+
+# Videos
+VIDEO_FRAME=1000      # frame num for cut, from the movie's start
+VIDEO_SCALE="640:360" # width:height
+# Set measured exact size for your vifm window, then remove '--scale-up' option from 'kitten icat'
+# It allows faster previw, but increases cache file size, and size might conflict between bare vifm and vifm on nvim.
+# VIDEO_SCALE="1376:774"

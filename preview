@@ -1,18 +1,6 @@
 #!/bin/bash
 
-# --------------------------------------------------------------------------------
-# Consts
-# --------------------------------------------------------------------------------
-
-# Images
-IMAGE_QUALITY=80
-IMAGE_RESIZE="600x600" # the size of vifm window on full screen
-# IMAGE_RESIZE="1376x1617" # Measured exact size for me, then remove '--scale-up' option from 'kitten icat'
-
-# Videos
-VIDEO_FRAME=1000      # frame num for cut, from the movie's start
-VIDEO_SCALE="640:360" # width:height
-# VIDEO_SCALE="1376:774" # Measured exact size for me, then remove '--scale-up' option from 'kitten icat'
+SCRIPT_NAME='preview.vifm'
 
 # --------------------------------------------------------------------------------
 # Functions
@@ -23,25 +11,41 @@ function Log() {
    local label="$1"
    local value="$2"
    local length=20
-   if [[ $log_enabled == 1 ]]; then
+   if [[ $LOG_ENABLED == 1 ]]; then
       printf "%-${length}s: %s\n" "$label" "$value" >>"$log_file"
    fi
 }
 
+# get environment as array
+# like ['nvim', 'tmux'] or ['nvim', 'terminal'] or ['terminal'] or ['tmux']
+GetEnvironment() {
+   local env_array=()
+   if [ -n "$NVIM" ]; then
+      env_array+=("nvim")
+   fi
+   if [ -n "$TMUX" ]; then
+      env_array+=("tmux")
+   else
+      env_array+=("terminal")
+   fi
+   echo "${env_array[@]}"
+}
+
 # Set current directory
 function SetPrevDir() {
-   echo $cur_dir >"$prev_dir_file"
+   printf "%s" "$cur_dir" >"$prev_dir_file"
 }
 
 # Set current action
 function SetPrevAction() {
-   echo $action >"$prev_action_file"
+   echo "$action" >"$prev_action_file"
 }
 
 # Get previous directory
 function GetPrevDir() {
    if [[ -f "$prev_dir_file" ]]; then
-      cat "$prev_dir_file"
+      IFS= read -r prev_dir <"$prev_dir_file"
+      echo -n "$prev_dir" # 末尾のスペースを保持
    else
       echo ""
    fi
@@ -56,6 +60,21 @@ function GetPrevAction() {
    fi
 }
 
+function IsArrayContained() {
+   source=$1
+   search=$2
+
+   found_all=true
+
+   for t in "${search[@]}"; do
+      if ! echo "${source[@]}" | grep -qw "$t"; then
+         found_all=false
+         break
+      fi
+   done
+   echo found_all
+}
+
 # Generate preview & return the hash path
 function GeneratePreview() {
    local action=$1
@@ -65,16 +84,23 @@ function GeneratePreview() {
 
    # Get preview filename (hash)
    local hash=$(echo $(realpath "$file") | sha256sum | cut -d' ' -f1) # get hash
-   local preview_path="$cache_dir/$hash.jpg"                          # preview path
+   local preview_path="$CACHE_DIR/$hash.jpg"                          # preview path
 
    # Generate preview
    if [ ! -f "$preview_path" ]; then
-      if [[ $action == "image" ]]; then
-         magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_RESIZE "$preview_path" &>/dev/null # '&' at last works async ?
-      elif [[ $action == "video" ]]; then
-         ffmpeg -y -i "$file" -vf "select='eq(n,$VIDEO_FRAME)',scale=$VIDEO_SCALE" -frames:v 1 "$preview_path" &>/dev/null # '&' at last works async ?
+      if [[ ! $nvim ]]; then
+         # not on nvim
+         if [[ $action == "image" ]]; then
+            magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_RESIZE "$preview_path" &>/dev/null # '&' at last works async ?
+         elif [[ $action == "video" ]]; then
+            ffmpeg -y -i "$file" -vf "select='eq(n,$VIDEO_FRAME)',scale=$VIDEO_SCALE" -frames:v 1 "$preview_path" &>/dev/null # '&' at last works async ?
+         else
+            Log "ERROR" "[action] '$action' not matched."
+         fi
       else
-         Log "ERROR" "[action] '$action' not matched."
+         # on nvim
+         # Do nothing
+         Log "fallback" "Skip generating (vifm on nvim)"
       fi
    fi
    Log "preview_path" "$preview_path"
@@ -131,7 +157,7 @@ function ReplacePlaceholders() {
    cmd="${cmd//%ph/$ph}"
    cmd="${cmd//%px/$px}"
    cmd="${cmd//%py/$py}"
-   cmd="${cmd//%tty/$tty}"
+   cmd="${cmd//%tty/$VIFM_PREVIEW_TTY}"
    if [[ $preview_path != '' ]]; then
       cmd="${cmd//%file/$preview_path}"
    fi
@@ -143,39 +169,43 @@ function ReplacePlaceholders() {
 
 # Clear
 function Clear() {
-   Log "function" "clear start"
-
-   local cmd_clear=$(ReplacePlaceholders "$cmd_clear_template" "")
+   Log "function" "Clear() start"
+   local cmd_clear=$(ReplacePlaceholders "$CLEAR_CMD_TEMPLATE" "")
    sh -c "$cmd_clear"
-
-   Log "function" "clear end"
+   Log "function" "Clear() end"
 }
 
 # Show preview
 function Show() {
+   Log "function" "Show() start"
+   # Adjust x,y on nvim
+   if [[ $nvim ]]; then
+      px=$((px + VIFM_PREVIEW_WIN_X))
+      py=$((py + VIFM_PREVIEW_WIN_Y))
+   fi
    local preview_path="$1"
-   local cmd_show=$(ReplacePlaceholders "$cmd_show_template" "$preview_path")
+   local cmd_show=$(ReplacePlaceholders "$SHOW_CMD_TEMPLATE" "$preview_path")
    sh -c "$cmd_show"
+   Log "function" "Show() end"
 }
 
 # --------------------------------------------------------------------------------
 # Main script
 # --------------------------------------------------------------------------------
-
 function Main() {
    # Logging
-   Log "start" "preview command start ----------------------------------------------------------"
+   Log "\nstart" "preview command start ----------------------------------------------------------"
    Log "action" "$action"
    Log "filename" "$file"
    Log "size" "$pw x $ph"
    Log "pos" "$px x $py"
    Log "prev_dir" "$prev_dir"
    Log "cur_dir" "$cur_dir"
-   Log "cmd_show_template" "$cmd_show_template"
-   Log "cmd_clear_template" "$cmd_clear_template"
+   Log "cmd_show_template" "$SHOW_CMD_TEMPLATE"
+   Log "cmd_clear_template" "$CLEAR_CMD_TEMPLATE"
 
    # Create cache directory
-   mkdir -p "$cache_dir"
+   mkdir -p "$CACHE_DIR"
 
    # ----- [action]: clear
    if [[ $action == "clear" ]]; then # quick & first not to loss time
@@ -200,6 +230,19 @@ function Main() {
 }
 
 # --------------------------------------------------------------------------------
+# Source config
+# --------------------------------------------------------------------------------
+config="$VIFM/scripts/$SCRIPT_NAME/config"
+if [ -f "$config" ]; then
+   source "$config"
+elif [ -f "$config.default" ]; then
+   source "$config.default"
+else
+   echo "[ERROR]: 'config' or 'config.default' not exists."
+   exit
+fi
+
+# --------------------------------------------------------------------------------
 # Global variables
 # --------------------------------------------------------------------------------
 
@@ -214,15 +257,6 @@ patterns=$7
 
 # Adjust args
 file="${file//\\ / }" # replate '\ ' to ' '
-# patterns="${patterns//,/ }" # replace ',' to ' '
-
-# Get env
-cache_dir=$VIFM_PREVIEW_CACHE_DIR
-log_enabled=$VIFM_PREVIEW_LOG_ENABLED
-tty=$VIFM_PREVIEW_TTY
-uid=$VIFM_PREVIEW_UID
-cmd_show_template=$VIFM_PREVIEW_SHOW
-cmd_clear_template=$VIFM_PREVIEW_CLEAR
 
 # Omit for action:clear to cause error
 # # Validate
@@ -231,18 +265,24 @@ cmd_clear_template=$VIFM_PREVIEW_CLEAR
 #    # exit
 # fi
 
-# path for log
-log_file="$cache_dir/log"
-# path for saving previous dir & action
-prev_action_file="$cache_dir/prev_action"
-prev_dir_file="$cache_dir/prev_dir"
+# Path for log
+log_file="$CACHE_DIR/log"
+# Path for saving previous dir & action
+prev_action_file="$CACHE_DIR/prev_action"
+prev_dir_file="$CACHE_DIR/prev_dir"
 
-# previous/current directories
+# Previous/current directories
 cur_dir=$(dirname "$(realpath "$file")")
 prev_dir=$(GetPrevDir)
 
-# previous action
+# Previous action
 prev_action=$(GetPrevAction)
+
+# Environment, like nvim, tmux, terminal
+envrionment=$(GetEnvironment)
+
+# On nvim or not
+nvim=$(IsArrayContained environment {"nvim"})
 
 # Execute Main()
 Main
