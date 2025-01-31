@@ -205,9 +205,16 @@ function Show() {
       sh -c "$cmd_show"
    else
       # on nvim
-      local cmd_show_fallback_template="echo '%c' >%tty <%tty"
-      local cmd_show=$(ReplacePlaceholders "$cmd_show_fallback_template" "")
+      $px = $VIFM_PREVIEW_WIN_X
+      $py = $VIFM_PREVIEW_WIN_Y
+      $pw = $VIFM_PREVIEW_WIN_W
+      $ph = $VIFM_PREVIEW_WIN_H
+      local preview_path="$1"
+      local cmd_show=$(ReplacePlaceholders "$cmd_show_template" "$preview_path")
       sh -c "$cmd_show"
+      # local cmd_show_fallback_template="echo '%c' >%tty <%tty"
+      # local cmd_show=$(ReplacePlaceholders "$cmd_show_fallback_template" "")
+      # sh -c "$cmd_show"
    fi
    Log "function" "Show() end"
 }
