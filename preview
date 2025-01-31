@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ./config
+SCRIPT_NAME='preview.vifm'
 
 # --------------------------------------------------------------------------------
 # Functions
@@ -11,7 +11,7 @@ function Log() {
    local label="$1"
    local value="$2"
    local length=20
-   if [[ $log_enabled == 1 ]]; then
+   if [[ $LOG_ENABLED == 1 ]]; then
       printf "%-${length}s: %s\n" "$label" "$value" >>"$log_file"
    fi
 }
@@ -84,7 +84,7 @@ function GeneratePreview() {
 
    # Get preview filename (hash)
    local hash=$(echo $(realpath "$file") | sha256sum | cut -d' ' -f1) # get hash
-   local preview_path="$cache_dir/$hash.jpg"                          # preview path
+   local preview_path="$CACHE_DIR/$hash.jpg"                          # preview path
 
    # Generate preview
    if [ ! -f "$preview_path" ]; then
@@ -157,7 +157,7 @@ function ReplacePlaceholders() {
    cmd="${cmd//%ph/$ph}"
    cmd="${cmd//%px/$px}"
    cmd="${cmd//%py/$py}"
-   cmd="${cmd//%tty/$tty}"
+   cmd="${cmd//%tty/$VIFM_PREVIEW_TTY}"
    if [[ $preview_path != '' ]]; then
       cmd="${cmd//%file/$preview_path}"
    fi
@@ -170,7 +170,7 @@ function ReplacePlaceholders() {
 # Clear
 function Clear() {
    Log "function" "Clear() start"
-   local cmd_clear=$(ReplacePlaceholders "$cmd_clear_template" "")
+   local cmd_clear=$(ReplacePlaceholders "$CLEAR_CMD_TEMPLATE" "")
    sh -c "$cmd_clear"
    Log "function" "Clear() end"
 }
@@ -184,7 +184,7 @@ function Show() {
       py=$((py + VIFM_PREVIEW_WIN_Y))
    fi
    local preview_path="$1"
-   local cmd_show=$(ReplacePlaceholders "$cmd_show_template" "$preview_path")
+   local cmd_show=$(ReplacePlaceholders "$SHOW_CMD_TEMPLATE" "$preview_path")
    sh -c "$cmd_show"
    Log "function" "Show() end"
 }
@@ -201,11 +201,11 @@ function Main() {
    Log "pos" "$px x $py"
    Log "prev_dir" "$prev_dir"
    Log "cur_dir" "$cur_dir"
-   Log "cmd_show_template" "$cmd_show_template"
-   Log "cmd_clear_template" "$cmd_clear_template"
+   Log "cmd_show_template" "$SHOW_CMD_TEMPLATE"
+   Log "cmd_clear_template" "$CLEAR_CMD_TEMPLATE"
 
    # Create cache directory
-   mkdir -p "$cache_dir"
+   mkdir -p "$CACHE_DIR"
 
    # ----- [action]: clear
    if [[ $action == "clear" ]]; then # quick & first not to loss time
@@ -230,6 +230,19 @@ function Main() {
 }
 
 # --------------------------------------------------------------------------------
+# Source config
+# --------------------------------------------------------------------------------
+config="$VIFM/scripts/$SCRIPT_NAME/config"
+if [ -f "$config" ]; then
+   source "$config"
+elif [ -f "$config.default" ]; then
+   source "$config.default"
+else
+   echo "[ERROR]: 'config' or 'config.default' not exists."
+   exit
+fi
+
+# --------------------------------------------------------------------------------
 # Global variables
 # --------------------------------------------------------------------------------
 
@@ -245,14 +258,6 @@ patterns=$7
 # Adjust args
 file="${file//\\ / }" # replate '\ ' to ' '
 
-# Get env
-cache_dir=$VIFM_PREVIEW_CACHE_DIR
-log_enabled=$VIFM_PREVIEW_LOG_ENABLED
-tty=$VIFM_PREVIEW_TTY
-uid=$VIFM_PREVIEW_UID
-cmd_show_template=$VIFM_PREVIEW_SHOW
-cmd_clear_template=$VIFM_PREVIEW_CLEAR
-
 # Omit for action:clear to cause error
 # # Validate
 # if [ ! -f "$file" ]; then
@@ -261,10 +266,10 @@ cmd_clear_template=$VIFM_PREVIEW_CLEAR
 # fi
 
 # Path for log
-log_file="$cache_dir/log"
+log_file="$CACHE_DIR/log"
 # Path for saving previous dir & action
-prev_action_file="$cache_dir/prev_action"
-prev_dir_file="$cache_dir/prev_dir"
+prev_action_file="$CACHE_DIR/prev_action"
+prev_dir_file="$CACHE_DIR/prev_dir"
 
 # Previous/current directories
 cur_dir=$(dirname "$(realpath "$file")")

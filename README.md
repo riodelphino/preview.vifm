@@ -48,6 +48,14 @@ Works: `kitten icat`
 Not tested: `timg`, `img2sixel`, `imgcat`, `chafa`, etc
 
 
+## Files
+
+├── README.md      : this file
+├── config         : config file
+├── config.default : default config file
+└── preview        : script
+
+
 ## Command usage
 
 ```txt
@@ -88,25 +96,74 @@ ln -s preview.vifm/preview preview # vifm do not read scripts's sub dir somewhy,
 ## Setup
 
 
-### in bash or zsh
+### .zshrc or .bashrc
 
-Add code to `~/.zshrc` or `~/.bashrc`
+Add the code to `~/.zshrc` or `~/.bashrc`
+
 ```bash
-# preview.vifm
-export VIFM_PREVIEW_CACHE_DIR="$HOME/.cache/vifm/preview"
-export VIFM_PREVIEW_LOG_ENABLED=0 # 0: No logging | 1: Logging
-export VIFM_PREVIEW_UID="$(uuidgen)"
+export VIFM_PREVIEW_UUID="$(uuidgen)"
 export VIFM_PREVIEW_TTY="$(tty)"
-export VIFM_PREVIEW_SHOW='kitten icat --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
-export VIFM_PREVIEW_CLEAR='kitten icat --clear --silent %N >%tty <%tty &'
 ```
-Then, remember to execute `source ~/.zshrc` in terminal
+
+This code records `tty` like `/dev/tts001` on terminal init.  
+`UUID` is set for future expansion.
+
+Remember to execute `source ~/.zshrc` in terminal.
+
+> [!Note]
+> Only terminal returns `tty` correctry. `tty` command on vifmrc returns error, like `not a tty`.
+> That's the reason for inserting this code.
+
+
+## Config
+
+Default settings are in `config.default`.  
+Copy it & rename to `config`, then modify it.
+
+If `config` not exists, plugin uses `config.default`.
+
+config.default:
+```bash
+#!/bin/bash
+
+# Cache
+if [ -n "$XDG_CACHE_HOME" ]; then
+   CACHE_DIR="$XDG_CACHE_HOME/vifm/preview"
+else
+   CACHE_DIR="$HOME/.cache/vifm/preview"
+fi
+
+# Log
+LOG_ENABLED=1 # 0: No logging | 1: Logging (cause timeloss)
+
+# Preview command
+SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
+CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
+
+# Images
+IMAGE_QUALITY=80
+IMAGE_RESIZE="600x600" # the size of vifm window on full screen
+# IMAGE_RESIZE="1376x1617" # Measured exact size for me, then remove '--scale-up' option from 'kitten icat'
+
+# Videos
+VIDEO_FRAME=1000      # frame num for cut, from the movie's start
+VIDEO_SCALE="640:360" # width:height
+# VIDEO_SCALE="1376:774" # Measured exact size for me, then remove '--scale-up' option from 'kitten icat'
+```
 
 > [!Note]
 > %pw %ph %px %py %file %tty, are replaced to the actual values in preview command.
 
-> [!Note]
-> Only terminal returns `tty` correctry. `tty` command on vifmrc returns error, like `not a tty`. That's why using enviromental variables on terminal's init.
+
+
+### Sample
+
+```bash
+# --- timg
+# Not works correctly. It shows disturbed color & text block images.
+SHOW_CMD_TEMPLATE='timg -p sixel -g %pwx%ph "%file"'
+CLEAR_CMD_TEMPLATE='timg -clear'
+```
 
 
 ### in vifmrc
