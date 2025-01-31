@@ -30,19 +30,16 @@ Because of the position out of place & not working `clear` command.
 
 
 - MacOS
-  - [vifm.vim](https://github.com/vifm/vifm.vim) or [fm.nvim](https://github.com/is0n/fm-nvim) < nvim < kitty
-     - A. Shown in out of place
   - [vifm.vim](https://github.com/vifm/vifm.vim) or [fm.nvim](https://github.com/is0n/fm-nvim) < nvim < tmux < kitty
-     - A. Shown in out of place
-     - B. `clear` not works at all
+     - A. `clear` not works at all
 
-**A. Shown in out of place**
+**A. 'clear' not works at all**
+The cause is Unknown.
+
+**(Resolved) Shown in out of place**
 Floating x/y pos | signcolumn | bufferline are the cause.  
 In full size window mode, adding `export $VIFM_PREVIEW_PX_ADJUST=1` & `export $VIFM_PREVIEW_PY_ADJUST=1` & applying them, might resolve it.  
 In floating window mode, getting the position x/y (=top/left) from the `win` might resolve it.  
-
-**B. 'clear' not works at all**
-The cause is Unknown.
 
 
 ## Graphic protocols
@@ -137,6 +134,33 @@ fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[ic
 
 > [!Note]
 > `%pc` is just a delimiter, between displaying command and cleaning command.
+
+### in init.lua of nvim
+If you use vifm on nvim, set these code to `init.lua`.
+```lua
+-- init.lua
+function get_window_position()
+   local win = vim.api.nvim_get_current_win()
+   local win_info = vim.api.nvim_win_get_config(win)
+   local left = win_info.col
+   local top = win_info.row
+   local width = win_info.width
+   local height = win_info.height
+   return left, top, width, height
+end
+
+vim.api.nvim_create_autocmd({ 'BufEnter' }, {
+   callback = function()
+      local x, y, w, h = get_window_position()
+      vim.env.VIFM_PREVIEW_WIN_X = x or 0
+      vim.env.VIFM_PREVIEW_WIN_Y = y or 0
+      vim.env.VIFM_PREVIEW_WIN_W = w or 0
+      vim.env.VIFM_PREVIEW_WIN_H = h or 0
+      -- print(string.format('%dx%d @ %dx%d', w, h, x, y)) -- for check
+   end,
+})
+```
+This saves x,y,w,h values to environmental variables, and `preview` uses them for adjusting showing position.
 
 
 ## Technical info

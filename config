@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Images
+IMAGE_QUALITY=80
+IMAGE_RESIZE="600x600" # the size of vifm window on full screen
+# IMAGE_RESIZE="1376x1617" # Measured exact size for me, then remove '--scale-up' option from 'kitten icat'
+
+# Videos
+VIDEO_FRAME=1000      # frame num for cut, from the movie's start
+VIDEO_SCALE="640:360" # width:height
+# VIDEO_SCALE="1376:774" # Measured exact size for me, then remove '--scale-up' option from 'kitten icat'
