@@ -86,7 +86,7 @@ ln -s preview.vifm/preview preview # vifm do not read scripts's sub dir somewhy,
 
 ## Setup
 
-Follow these four steps.
+Follow these 5 steps.
 
 
 ### 1. zsh or bash
@@ -215,9 +215,18 @@ vim.api.nvim_create_autocmd({ 'BufEnter' }, {
 ```
 This saves x,y,w,h values to environmental variables, and `preview` command uses them for adjusting showing position.
 
+### 5. vifm
 
-## Known problems
+To get faster previewing, add below code to `vifmrc`.
 
+```vim
+set previewoptions+=graphicsdelay:0
+```
+
+
+## Known issues
+
+- [ ] Cannot generate correct hash filename for `2025-01-27 10.41.34.mov`, which has '.' in basename.
 - [ ] 'clear' not works in `vifm < nvim < tmux`.
 - [ ] Async generation all files not works. It freeze `vifm` for a while.
 

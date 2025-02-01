@@ -88,19 +88,12 @@ function GeneratePreview() {
 
    # Generate preview
    if [ ! -f "$preview_path" ]; then
-      if [[ ! $nvim ]]; then
-         # not on nvim
-         if [[ $action == "image" ]]; then
-            magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_RESIZE "$preview_path" &>/dev/null # '&' at last works async ?
-         elif [[ $action == "video" ]]; then
-            ffmpeg -y -i "$file" -vf "select='eq(n,$VIDEO_FRAME)',scale=$VIDEO_SCALE" -frames:v 1 "$preview_path" &>/dev/null # '&' at last works async ?
-         else
-            Log "ERROR" "[action] '$action' not matched."
-         fi
+      if [[ $action == "image" ]]; then
+         magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_RESIZE "$preview_path" &>/dev/null # '&' at last works async ?
+      elif [[ $action == "video" ]]; then
+         ffmpeg -y -i "$file" -vf "select='eq(n,$VIDEO_FRAME)',scale=$VIDEO_SCALE" -frames:v 1 "$preview_path" &>/dev/null # '&' at last works async ?
       else
-         # on nvim
-         # Do nothing
-         Log "fallback" "Skip generating (vifm on nvim)"
+         Log "ERROR" "[action] '$action' not matched."
       fi
    fi
    Log "preview_path" "$preview_path"
