@@ -15,12 +15,12 @@ A previewing script for image/video on vifm.
 ## Ensured to work
 
 - MacOS
-   - Without nvim
-      - [x] [vifm](https://github.com/vifm/vifm) < kitty
-      - [x] [vifm](https://github.com/vifm/vifm) < tmux < kitty
-   - With nvim
-      - [x] [vifm](https://github.com/vifm/vifm) < nvim < kitty
-      - [ ] [vifm](https://github.com/vifm/vifm) < nvim < tmux < kitty (`clear` not works)
+   - Without nvim  
+      ✓ [vifm](https://github.com/vifm/vifm) < kitty  
+      ✓ [vifm](https://github.com/vifm/vifm) < tmux < kitty  
+   - With nvim  
+      ✓ [vifm](https://github.com/vifm/vifm) < nvim < kitty  
+      △ [vifm](https://github.com/vifm/vifm) < nvim < tmux < kitty (`clear` not works)  
 
 > [!Warning]
 > Not tested in ohter OS or terminal apps.
@@ -89,7 +89,7 @@ ln -s preview.vifm/preview preview # vifm do not read scripts's sub dir somewhy,
 Follow these four steps.
 
 
-### 1 zsh or bash
+### 1. zsh or bash
 
 Add this code to `~/.zshrc` or `~/.bashrc`
 
@@ -109,7 +109,7 @@ Remember to execute `source ~/.zshrc` in terminal.
 > That's the reason for inserting this code.
 
 
-### 2 Config
+### 2. Config
 
 Default settings are in `config.default`.  
 Copy it & rename to `config`, then modify it.
@@ -160,7 +160,7 @@ CLEAR_CMD_TEMPLATE='timg -clear'
 ```
 
 
-### 3 vifmrc
+### 3. vifmrc
 
 Add this code to `~/.config/vifmrc`
 
@@ -187,7 +187,7 @@ fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[ic
 > `%pc` is just a delimiter, between displaying command and cleaning command.
 
 
-### 4 for nvim
+### 4. nvim
 
 If you use vifm on nvim, set these code to `init.lua`.
 ```lua
@@ -219,7 +219,7 @@ This saves x,y,w,h values to environmental variables, and `preview` command uses
 ## Known problems
 
 - [ ] 'clear' not works in `vifm < nvim < tmux`.
-- [ ] Async all files generation not works
+- [ ] Async generation all files not works. It freeze `vifm` for a while.
 
 ### (Resolved) tty
 
@@ -235,7 +235,7 @@ Though that sample code is on kitty official site.
 ### (Resolved) Images are shown in out of place
 
 Floating x/y pos | signcolumn | bufferline are the cause.  
-Almost **resolved** by [this lua code](#4-for-nvim).  
+Almost **resolved** by [this lua code](#4-nvim).  
 And `set signcolumn=auto` is recommended in nvim's `init.lua`.
 
 
