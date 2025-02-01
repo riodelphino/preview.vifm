@@ -86,7 +86,7 @@ ln -s preview.vifm/preview preview # vifm do not read scripts's sub dir somewhy,
 
 ## Setup
 
-Follow these four steps.
+Follow these 5 steps.
 
 
 ### 1. zsh or bash
@@ -214,6 +214,14 @@ vim.api.nvim_create_autocmd({ 'BufEnter' }, {
 })
 ```
 This saves x,y,w,h values to environmental variables, and `preview` command uses them for adjusting showing position.
+
+### 5. vifm
+
+To get faster previewing, add below code to `vifmrc`.
+
+```vim
+set previewoptions+=graphicsdelay:0
+```
 
 
 ## Known problems
