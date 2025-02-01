@@ -226,6 +226,7 @@ set previewoptions+=graphicsdelay:0
 
 ## Known problems
 
+- [ ] Cannot generate correct hash filename for `2025-01-27 10.41.34.mov`, which has '.' in basename.
 - [ ] 'clear' not works in `vifm < nvim < tmux`.
 - [ ] Async generation all files not works. It freeze `vifm` for a while.
 
