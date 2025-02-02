@@ -135,13 +135,13 @@ SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scal
 CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
 
 # Images
-IMAGE_QUALITY=80
-IMAGE_SIZE="600x600" # {width}x{height} of vifm window on full screen
+IMAGE_QUALITY=80     # {quality}        : Thumbnail quality
+IMAGE_SIZE="600x600" # {width}x{height} : Thumbnail size
 
 # Videos
-VIDEO_QUALITY=80   # quality for thumbnail image
-VIDEO_SEEK_TIME=10 # seek time to get thumbnail (percentage)
-VIDEO_SIZE="640"   # {width}, for ffmpegthumbnailer
+VIDEO_QUALITY=80   # {quolity}    : Thumbnail quality
+VIDEO_SEEK_TIME=10 # {percentage} : Seek time (%) of the total video duration
+VIDEO_SIZE=640     # {size}       : Thumbnail size. cropped to fit within {size}x{size}
 ```
 
 > [!Note]
