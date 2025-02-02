@@ -11,7 +11,7 @@ function Log() {
    local label="$1"
    local value="$2"
    local length=20
-   if [[ $LOG_ENABLED == 1 ]]; then
+   if [[ $LOG_ENABLED == true ]]; then
       printf "%-${length}s: %s\n" "$label" "$value" >>"$log_file"
    fi
 }

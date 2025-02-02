@@ -145,11 +145,11 @@ VIDEO_SIZE="640"   # {width}, for ffmpegthumbnailer
 ```
 
 > [!Note]
-> %pw %ph %px %py %file %tty, are replaced to the actual values in preview command.
+> The placeholders `%pw`, `%ph`, `%px`, `%py`, `%file`, and `%tty` will be replaced with their actual values in preview command.
 
 > [!Note]
-> IMAGE_SIZE="1376x1617"
-> Set measured exact size for your vifm window in bare terminal, then remove '--scale-up' option from SHOW_CMD_TEMPLATE.
+> ex.) IMAGE_SIZE="1376x1617"  
+> Set measured exact size for your vifm window in bare terminal, then remove '--scale-up' option from SHOW_CMD_TEMPLATE.  
 > It allows faster previw, but increases cache file size.
 
 

@@ -8,7 +8,7 @@ else
 fi
 
 # Log
-LOG_ENABLED=1 # 0: No logging | 1: Logging (cause timeloss)
+LOG_ENABLED=false # `true` cause a slight performance overhead
 
 # Preview command
 SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
@@ -16,7 +16,7 @@ CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
 
 # Images
 IMAGE_QUALITY=80
-IMAGE_SIZE="600x600" # {width}x{height} of vifm window on full screen
+IMAGE_SIZE="600x600" # {width}x{height}
 
 # Videos
 VIDEO_QUALITY=80   # quality for thumbnail image
