@@ -120,6 +120,9 @@ config.default:
 ```bash
 #!/bin/bash
 
+# Log
+LOG_ENABLED=false # `true` cause a slight performance overhead
+
 # Cache
 if [ -n "$XDG_CACHE_HOME" ]; then
    CACHE_DIR="$XDG_CACHE_HOME/vifm/preview"
@@ -127,29 +130,26 @@ else
    CACHE_DIR="$HOME/.cache/vifm/preview"
 fi
 
-# Log
-LOG_ENABLED=0 # 0: No logging | 1: Logging (cause timeloss)
-
 # Preview command
 SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
 CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
 
 # Images
-IMAGE_QUALITY=80
-IMAGE_SIZE="600x600" # {width}x{height} of vifm window on full screen
+IMAGE_QUALITY=80     # {quality}        : Thumbnail quality
+IMAGE_SIZE="600x600" # {width}x{height} : Thumbnail size
 
 # Videos
-VIDEO_QUALITY=80   # quality for thumbnail image
-VIDEO_SEEK_TIME=10 # seek time to get thumbnail (percentage)
-VIDEO_SIZE="640"   # {width}, for ffmpegthumbnailer
+VIDEO_QUALITY=80   # {quolity}    : Thumbnail quality
+VIDEO_SEEK_TIME=10 # {percentage} : Seek time (%) of the total video duration
+VIDEO_SIZE=640     # {size}       : Thumbnail size. cropped to fit within {size}x{size}
 ```
 
 > [!Note]
-> %pw %ph %px %py %file %tty, are replaced to the actual values in preview command.
+> The placeholders `%pw`, `%ph`, `%px`, `%py`, `%file`, and `%tty` will be replaced with their actual values in preview command.
 
 > [!Note]
-> IMAGE_SIZE="1376x1617"
-> Set measured exact size for your vifm window in bare terminal, then remove '--scale-up' option from SHOW_CMD_TEMPLATE.
+> ex.) IMAGE_SIZE="1376x1617"  
+> Set measured exact size for your vifm window in bare terminal, then remove '--scale-up' option from SHOW_CMD_TEMPLATE.  
 > It allows faster previw, but increases cache file size.
 
 
