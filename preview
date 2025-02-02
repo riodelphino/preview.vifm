@@ -174,8 +174,8 @@ function Show() {
    Log "function" "Show() start"
    # Adjust x,y on nvim
    if [[ $nvim ]]; then
-      px=$((px + VIFM_PREVIEW_WIN_X + NVIM_SHIFT_X))
-      py=$((py + VIFM_PREVIEW_WIN_Y + NVIM_SHIFT_Y))
+      px=$((px + VIFM_PREVIEW_WIN_X + VIFM_PREVIEW_WIN_BORDER_SIZE))
+      py=$((py + VIFM_PREVIEW_WIN_Y + VIFM_PREVIEW_WIN_BORDER_SIZE))
    fi
    local preview_path="$1"
    local cmd_show=$(ReplacePlaceholders "$SHOW_CMD_TEMPLATE" "$preview_path")
