@@ -72,7 +72,7 @@ SAMPLE CODE:
 
 DEPENDENCIES:
    - imagemagick
-   - ffmpeg
+   - ffmpegthumbnailer
    - kitten icat (or other graphic protocols)
 ```
 
