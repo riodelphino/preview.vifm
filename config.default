@@ -10,6 +10,10 @@ else
    CACHE_DIR="$HOME/.cache/vifm/preview"
 fi
 
+# nvim
+NVIM_SHIFT_X=1 # {shift_x} : Adjust x position in nvim (for float border thickness)
+NVIM_SHIFT_Y=1 # {shift_y} : Adjust y position in nvim (for float border thickness)
+
 # Preview command
 SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
 CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
