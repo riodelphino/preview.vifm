@@ -72,7 +72,7 @@ SAMPLE CODE:
 
 DEPENDENCIES:
    - imagemagick
-   - ffmpeg
+   - ffmpegthumbnailer
    - kitten icat (or other graphic protocols)
 ```
 
@@ -136,17 +136,22 @@ CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
 
 # Images
 IMAGE_QUALITY=80
-IMAGE_RESIZE="600x600" # the size of vifm window on full screen
-# IMAGE_RESIZE="1376x1617" # Measured exact size for me, then remove '--scale-up' option from 'kitten icat'
+IMAGE_SIZE="600x600" # {width}x{height} of vifm window on full screen
 
 # Videos
-VIDEO_FRAME=1000      # frame num for cut, from the movie's start
-VIDEO_SCALE="640:360" # width:height
-# VIDEO_SCALE="1376:774" # Measured exact size for me, then remove '--scale-up' option from 'kitten icat'
+VIDEO_QUALITY=80   # quality for thumbnail image
+VIDEO_SEEK_TIME=10 # seek time to get thumbnail (percentage)
+VIDEO_SIZE="640"   # {width}, for ffmpegthumbnailer
 ```
 
 > [!Note]
 > %pw %ph %px %py %file %tty, are replaced to the actual values in preview command.
+
+> [!Note]
+> IMAGE_SIZE="1376x1617"
+> Set measured exact size for your vifm window in bare terminal, then remove '--scale-up' option from SHOW_CMD_TEMPLATE.
+> It allows faster previw, but increases cache file size.
+
 
 
 
