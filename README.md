@@ -235,7 +235,7 @@ vim.api.nvim_create_autocmd({ 'BufWinEnter' }, {
       vim.env.VIFM_PREVIEW_WIN_W = w or 0
       vim.env.VIFM_PREVIEW_WIN_H = h or 0
       vim.env.VIFM_PREVIEW_WIN_BORDER_SIZE = border_size or 0
-      -- print(string.format('%dx%d @ %dx%d (%d)', w, h, x, y, b))
+      -- print(string.format('%dx%d @ %dx%d (%d)', w, h, x, y, boder_size))
       -- end
    end,
 })
@@ -253,9 +253,9 @@ set previewoptions+=graphicsdelay:0
 
 ## Known issues
 
-- [ ] Cannot generate correct hash filename for `2025-01-27 10.41.34.mov`, which has '.' in basename.
 - [ ] 'clear' not works in `vifm < nvim < tmux`.
 - [ ] Async generation all files not works. It freeze `vifm` for a while.
+- [ ] If `notify.nvim` is shown, the preview position x,y are disturbed.
 
 ### (Resolved) tty
 
