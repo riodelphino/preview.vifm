@@ -130,10 +130,6 @@ else
    CACHE_DIR="$HOME/.cache/vifm/preview"
 fi
 
-# nvim
-NVIM_SHIFT_X=1 # {shift_x} : Adjust x position in nvim (for float border thickness)
-NVIM_SHIFT_Y=1 # {shift_y} : Adjust y position in nvim (for float border thickness)
-
 # Preview command
 SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
 CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
@@ -201,28 +197,50 @@ fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[ic
 If you use vifm on nvim, set these code to `init.lua`.
 ```lua
 -- init.lua
-function get_window_position()
-   local win = vim.api.nvim_get_current_win()
-   local win_info = vim.api.nvim_win_get_config(win)
-   local left = win_info.col
-   local top = win_info.row
-   local width = win_info.width
-   local height = win_info.height
-   return left, top, width, height
+function get_floating_window_border_width(config)
+   -- If not a floating window
+   if config.relative == '' then return 0 end
+
+   -- Get border and determine width
+   local border = config.border
+   if type(border) == 'table' then
+      return #border > 0 and 1 or 0
+   elseif type(border) == 'string' then
+      return border == 'none' and 0 or 1
+   end
+
+   return 0 -- Unknown border type
 end
 
-vim.api.nvim_create_autocmd({ 'BufEnter' }, {
+function get_window_info()
+   local win_id = vim.api.nvim_get_current_win()
+   local config = vim.api.nvim_win_get_config(win_id)
+   local x = config.col
+   local y = config.row
+   local w = config.width
+   local h = config.height
+   local border_size = get_floating_window_border_width(config)
+   return x, y, w, h, border_size
+end
+
+vim.api.nvim_create_autocmd({ 'BufWinEnter' }, {
+   pattern = { '*' },
    callback = function()
-      local x, y, w, h = get_window_position()
+      local bufnr = vim.api.nvim_get_current_buf()
+      -- if vim.bo.buftype == 'terminal' then -- CHECKING NOT WORKS
+      -- if vim.api.nvim_buf_get_option(bufnr, 'buftype') == 'terminal' then -- CHECKING NOT WORKS
+      local x, y, w, h, border_size = get_window_info()
       vim.env.VIFM_PREVIEW_WIN_X = x or 0
       vim.env.VIFM_PREVIEW_WIN_Y = y or 0
       vim.env.VIFM_PREVIEW_WIN_W = w or 0
       vim.env.VIFM_PREVIEW_WIN_H = h or 0
-      -- print(string.format('%dx%d @ %dx%d', w, h, x, y)) -- for check
+      vim.env.VIFM_PREVIEW_WIN_BORDER_SIZE = border_size or 0
+      -- print(string.format('%dx%d @ %dx%d (%d)', w, h, x, y, b))
+      -- end
    end,
 })
 ```
-This saves x,y,w,h values to environmental variables, and `preview` command uses them for adjusting showing position.
+This saves x,y,w,h,boder_size values to environmental variables, and `preview` command uses them for adjusting showing position.
 
 ### 5. vifm
 
