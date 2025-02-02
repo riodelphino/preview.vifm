@@ -1,14 +1,14 @@
 #!/bin/bash
 
+# Log
+LOG_ENABLED=false # `true` cause a slight performance overhead
+
 # Cache
 if [ -n "$XDG_CACHE_HOME" ]; then
    CACHE_DIR="$XDG_CACHE_HOME/vifm/preview"
 else
    CACHE_DIR="$HOME/.cache/vifm/preview"
 fi
-
-# Log
-LOG_ENABLED=false # `true` cause a slight performance overhead
 
 # Preview command
 SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
@@ -24,5 +24,5 @@ VIDEO_SEEK_TIME=10 # seek time to get thumbnail (percentage)
 VIDEO_SIZE="640"   # {width}, for ffmpegthumbnailer
 
 # legacy settings for ffmpeg
-# VIDEO_FRAME=1000     # frame num for cut, for ffmpeg
-# VIDEO_SIZE="640:360" # {width}:{height}, for ffmpeg
+# VIDEO_FRAME=1000     # frame num for cut
+# VIDEO_SIZE="640:360" # {width}:{height}

@@ -120,15 +120,15 @@ config.default:
 ```bash
 #!/bin/bash
 
+# Log
+LOG_ENABLED=false # `true` cause a slight performance overhead
+
 # Cache
 if [ -n "$XDG_CACHE_HOME" ]; then
    CACHE_DIR="$XDG_CACHE_HOME/vifm/preview"
 else
    CACHE_DIR="$HOME/.cache/vifm/preview"
 fi
-
-# Log
-LOG_ENABLED=0 # 0: No logging | 1: Logging (cause timeloss)
 
 # Preview command
 SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
