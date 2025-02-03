@@ -219,24 +219,20 @@ function get_window_info()
    local y = config.row
    local w = config.width
    local h = config.height
-   local border_size = get_floating_window_border_width(config)
-   return x, y, w, h, border_size
+   local bw = get_floating_window_border_width(config)
+   return x, y, w, h, bw
 end
 
-vim.api.nvim_create_autocmd({ 'BufWinEnter' }, {
+vim.api.nvim_create_autocmd({ 'TermEnter' }, {
    pattern = { '*' },
    callback = function()
-      local bufnr = vim.api.nvim_get_current_buf()
-      -- if vim.bo.buftype == 'terminal' then -- CHECKING NOT WORKS
-      -- if vim.api.nvim_buf_get_option(bufnr, 'buftype') == 'terminal' then -- CHECKING NOT WORKS
-      local x, y, w, h, border_size = get_window_info()
-      vim.env.VIFM_PREVIEW_WIN_X = x or 0
-      vim.env.VIFM_PREVIEW_WIN_Y = y or 0
-      vim.env.VIFM_PREVIEW_WIN_W = w or 0
-      vim.env.VIFM_PREVIEW_WIN_H = h or 0
-      vim.env.VIFM_PREVIEW_WIN_BORDER_SIZE = border_size or 0
-      -- print(string.format('%dx%d @ %dx%d (%d)', w, h, x, y, b))
-      -- end
+     local x, y, w, h, bw = get_window_info()
+     vim.env.VIFM_PREVIEW_WIN_X = x or 0
+     vim.env.VIFM_PREVIEW_WIN_Y = y or 0
+     vim.env.VIFM_PREVIEW_WIN_W = w or 0
+     vim.env.VIFM_PREVIEW_WIN_H = h or 0
+     vim.env.VIFM_PREVIEW_WIN_BORDER_WIDTH = bw or 0
+     -- print(string.format('%dx%d @ %dx%d (%d)', w, h, x, y, bw)) -- Check code
    end,
 })
 ```
@@ -253,25 +249,27 @@ set previewoptions+=graphicsdelay:0
 
 ## Known issues
 
-- [ ] Cannot generate correct hash filename for `2025-01-27 10.41.34.mov`, which has '.' in basename.
 - [ ] 'clear' not works in `vifm < nvim < tmux`.
 - [ ] Async generation all files not works. It freeze `vifm` for a while.
+- [ ] If `notify.nvim` is shown, the preview position x,y are disturbed.
 
-### (Resolved) tty
+### tty not works
 
-`tty` command returns the tty value like `/dev/ttys001` on a bare terminal or on a terminal with tmux.
-But `tty` command returns `not a tty` in `vifmrc` or `nvim`.  
 **Resolved** by [this sh code](#1-zsh-or-bash)
+
+`tty` command returns like `/dev/ttys001` values on a `bare terminal` or `tmux`.
+But `tty` command returns `not a tty` strings in `vifmrc` or `nvim`.  
 
 Additionally...
 Without the `tty` like `zsh -c 'setsid kitten icat --stdin=no --use-window-size $COLUMNS,$LINES,3000,2000 --transfer-mode=file myimage.png'` not works for me. 
 Though that sample code is on kitty official site.
 
 
-### (Resolved) Images are shown in out of place
+### Shown in out of place
 
-Floating x/y pos | signcolumn | bufferline are the cause.  
 Almost **resolved** by [this lua code](#4-nvim).  
+
+Floating x,y positions or border size  are the cause.  
 And `set signcolumn=auto` is recommended in nvim's `init.lua`.
 
 
