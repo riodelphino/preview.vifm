@@ -28,7 +28,7 @@ A previewing script for image/video on vifm.
 
 ## Not fully functional
 
-The images are shown disturbed & overlapped in `vifm on nvim on tmux`, with plugins like [vifm.vim](https://github.com/vifm/vifm.vim) or [fm.nvim](https://github.com/is0n/fm-nvim).  
+The images are shown disturbed & overlapped in `vifm on nvim on tmux`, with plugins like [vifm.vim](https://github.com/vifm/vifm.vim) or [fm-nvim](https://github.com/is0n/fm-nvim).  
 Because of not working `clear` command.
 
 
@@ -194,7 +194,9 @@ fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[ic
 
 ### 4. nvim
 
-If you use vifm on nvim, set these code to `init.lua`.
+If you use vifm on nvim, set this code to `init.lua`.  
+With lazy.nvim, you can set it to `config = funciton() ... end` section on the settings for [vifm.vim](https://github.com/vifm/vifm.vim) / [fm-nvim](https://github.com/is0n/fm-nvim)
+
 ```lua
 -- init.lua
 function get_floating_window_border_width(config)
