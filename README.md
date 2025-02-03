@@ -226,15 +226,13 @@ end
 vim.api.nvim_create_autocmd({ 'TermEnter' }, {
    pattern = { '*' },
    callback = function()
-      if vim.bo.buftype == 'terminal' then
-         local x, y, w, h, bw = get_window_info()
-         vim.env.VIFM_PREVIEW_WIN_X = x or 0
-         vim.env.VIFM_PREVIEW_WIN_Y = y or 0
-         vim.env.VIFM_PREVIEW_WIN_W = w or 0
-         vim.env.VIFM_PREVIEW_WIN_H = h or 0
-         vim.env.VIFM_PREVIEW_WIN_BORDER_WIDTH = bw or 0
-         -- print(string.format('%dx%d @ %dx%d (%d)', w, h, x, y, border_size)) -- Check code
-      end
+     local x, y, w, h, bw = get_window_info()
+     vim.env.VIFM_PREVIEW_WIN_X = x or 0
+     vim.env.VIFM_PREVIEW_WIN_Y = y or 0
+     vim.env.VIFM_PREVIEW_WIN_W = w or 0
+     vim.env.VIFM_PREVIEW_WIN_H = h or 0
+     vim.env.VIFM_PREVIEW_WIN_BORDER_WIDTH = bw or 0
+     -- print(string.format('%dx%d @ %dx%d (%d)', w, h, x, y, bw)) -- Check code
    end,
 })
 ```
