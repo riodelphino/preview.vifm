@@ -188,7 +188,8 @@ function Show() {
 # --------------------------------------------------------------------------------
 function Main() {
    # Logging
-   Log "\nstart" "preview command start ----------------------------------------------------------"
+   Log "" ""
+   Log "start" "preview command start ----------------------------------------------------------"
    Log "action" "$action"
    Log "filename" "$file"
    Log "size" "$pw x $ph"

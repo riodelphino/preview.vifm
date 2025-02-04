@@ -8,8 +8,8 @@ A previewing script for image/video on vifm.
    - Preview image/video as jpg
    - Faster previewing with cache files
    - Batch generation for all matched files in current dir
-   - Modifiable graphic protocol to preview
-   - Logging
+   - Modifiable graphic protocol command
+   - Logging for debug
 
 
 ## Ensured to work
@@ -34,8 +34,15 @@ Because of not working `clear` command.
 
 ## Graphic protocols
 
-Works: `kitten icat`  
-Not tested: `timg`, `img2sixel`, `imgcat`, `chafa`, etc
+**Tested & works**
+   - `kitten icat`  
+
+**Not tested**
+   - `timg`
+   - `img2sixel`
+   - `imgcat`
+   - `chafa`
+   - etc
 
 
 ## Files
@@ -240,6 +247,9 @@ vim.api.nvim_create_autocmd({ 'WinEnter' }, { -- 'TermEnter' fails at first `:Vi
 ```
 This saves x,y,w,h,boder_width values to environmental variables, and `preview` command uses them for adjusting showing position.
 
+(The w,h are for future expansion.)
+
+
 ### 5. vifm
 
 To get faster previewing, add below code to `vifmrc`.
@@ -277,6 +287,5 @@ And `set signcolumn=auto` is recommended in nvim's `init.lua`.
 
 ## TODO
 
-- [ ] Move enviromental variables to .env
 - [ ] install/uninstall by MakeFile like [https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile](https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile)
 
