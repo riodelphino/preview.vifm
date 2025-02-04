@@ -2,6 +2,8 @@
 
 A previewing script for image/video on vifm.
 
+https://github.com/user-attachments/assets/a0ef0f53-ee6a-4ddc-86c0-5e4d15c917c9
+
 
 ## Features
 
