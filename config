@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Log
-LOG_ENABLED=false # `true` cause a slight performance overhead
+LOG_ENABLED=true # `true` cause a slight performance overhead
 
 # Cache
 if [ -n "$XDG_CACHE_HOME" ]; then
@@ -10,9 +10,35 @@ else
    CACHE_DIR="$HOME/.cache/vifm/preview"
 fi
 
+# CHAR_SIZE_RATIO x/y
+CHAR_SIZE_RATIO=2.0
+
 # Preview command
-SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
+# SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
+SHOW_CMD_TEMPLATE='kitten icat --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
+# クリアコマンドは別途あるので、描画時にはしなくていい？
 CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
+
+# # viu (not works)
+# SHOW_CMD_TEMPLATE='viu -x %pw -y %py -w %pw -h %ph "%file" >%tty <%tty'
+# # CLEAR_CMD_TEMPLATE='clear'
+# # CLEAR_CMD_TEMPLATE='printf "\033[H\033[J"'
+# CLEAR_CMD_TEMPLATE='viu -'
+
+# # chafa
+# SHOW_CMD_TEMPLATE='chafa --clear --view-size %pwx%ph --size %pwx%ph --align center,center "%file" >%tty <%tty'
+# # CLEAR_CMD_TEMPLATE='chafa --clear >%tty <%tty'
+# # or
+# # SHOW_CMD_TEMPLATE='chafa --clear --view-size %pwx%ph "%file" >%tty <%tty'
+# CLEAR_CMD_TEMPLATE=''
+
+# # timg
+# SHOW_CMD_TEMPLATE='timg --clear -g %pwx%ph "%file" >%tty <%tty'
+# # CLEAR_CMD_TEMPLATE='chafa --clear >%tty <%tty'
+# # or
+# # SHOW_CMD_TEMPLATE='chafa --clear --view-size %pwx%ph "%file" >%tty <%tty'
+# CLEAR_CMD_TEMPLATE=''
+# # export TIMG_FONT_WIDTH_CORRECT=1.1
 
 # Images
 IMAGE_QUALITY=80     # {quality}        : Thumbnail quality

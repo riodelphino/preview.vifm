@@ -19,12 +19,13 @@ Pictures from <a href="https://unsplash.com/ja/@jeremythomasphoto?utm_content=cr
 ## Ensured to work
 
 - MacOS
-   - Without nvim  
-      ✓ [vifm](https://github.com/vifm/vifm) < kitty  
-      ✓ [vifm](https://github.com/vifm/vifm) < tmux < kitty  
-   - With nvim  
-      ✓ [vifm](https://github.com/vifm/vifm) < nvim < kitty  
-      △ [vifm](https://github.com/vifm/vifm) < nvim < tmux < kitty (`clear` not works)  
+   - Without nvim
+      ✓ kitty > vifm
+      ✓ kitty > tmux > vifm
+   - With nvim
+      ✓ kitty > nvim > vifm
+      △ kitty > tmux > nvim > vifm (`clear` not works)
+      x kitty > tmux > nvim > terminal buffer > vifm (not works)
 
 > [!Warning]
 > Not tested in ohter OS or terminal apps.
@@ -39,14 +40,18 @@ Because of not working `clear` command.
 ## Graphic protocols
 
 **Tested & works**
-   - `kitten icat`  
+   - `kitten icat`
 
 **Not tested**
    - `timg`
    - `img2sixel`
    - `imgcat`
-   - `chafa`
-   - etc
+   - `chafa` (clear not works on nvim's terminal buffer)
+   - `tycat`
+   - e.t.c.
+
+**Not works**
+   - `viu` (no `clear` command) 
 
 
 ## Files
@@ -168,11 +173,21 @@ VIDEO_SIZE=640     # {size}       : Thumbnail size. cropped to fit within {size}
 
 #### Sample for other graphic protocols
 
+##### timg
 ```bash
-# --- timg
 # Sorry, NOT WORKS CORRECTLY. It shows disturbed color & text block images.
 SHOW_CMD_TEMPLATE='timg -p sixel -g %pwx%ph "%file"'
 CLEAR_CMD_TEMPLATE='timg -clear'
+```
+
+##### chafa
+```bash
+SHOW_CMD_TEMPLATE='chafa --view-size %pwx%ph "%file" >%tty <%tty'
+SHOW_CMD_TEMPLATE='chafa --clear >%tty <%tty'
+# or
+SHOW_CMD_TEMPLATE='chafa --clear --view-size %pwx%ph "%file" >%tty <%tty'
+SHOW_CMD_TEMPLATE=''
+
 ```
 
 

@@ -139,6 +139,18 @@ function GeneratePreviewAll() {
    Log "function" "GeneratePreviewAll() processed $cnt files"
 }
 
+# Get aspect ratio of image
+function GetAspectRatio() {
+   if [[ $action == "image" ]]; then
+      read w h < <(identify -format "%w %h" "$file")
+   elif [[ $action == "video" ]]; then
+      read w h < <(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 "$file")
+   fi
+   local aspect=$(awk "BEGIN {print $w/$h}")
+   Log "GetAspectRatio()" $aspect
+   echo $aspect
+}
+
 # Replace % placeholders to actual values
 function ReplacePlaceholders() {
    local cmd="$1"
@@ -146,9 +158,18 @@ function ReplacePlaceholders() {
    Log "function" "ReplacePlaceholders() start"
    Log "cmd_template" "$cmd"
 
+   # Get real height from aspect ratio
+   local aspect=$(GetAspectRatio)
+   local ah=$(awk "BEGIN {print int($pw/$aspect/$CHAR_SIZE_RATIO)}")
+   # ah=${ah%.*} # Cut off decimal points
+   # 縦が $ph に収まらない場合は、収まるように調整
+   if [[ $ah > $ph ]]; then
+      ah=$ph
+   fi
+
    # Replace
    cmd="${cmd//%pw/$pw}"
-   cmd="${cmd//%ph/$ph}"
+   cmd="${cmd//%ph/$ph}" # Use calculated height from aspect ratio
    cmd="${cmd//%px/$px}"
    cmd="${cmd//%py/$py}"
    cmd="${cmd//%tty/$VIFM_PREVIEW_TTY}"
@@ -179,6 +200,15 @@ function Show() {
    fi
    local preview_path="$1"
    local cmd_show=$(ReplacePlaceholders "$SHOW_CMD_TEMPLATE" "$preview_path")
+   # echo -e "\033[20;20H" # >%tty <%tty
+   # echo -en "     " # >%tty <%tty
+   # echo -en "\e[?8452h     " && chafa ~/Downloads/vdh/l/chichipui/20230611-1706-32-10-thumb.jpg >%tty <%tty
+   # echo -en "\e[?8452h     " >%tty <%tty
+
+   # sh -c "$cmd_show"
+   # sh -c "echo '\e[?8452h     >$VIFM_PREVIEW_TTY <$VIFM_PREVIEW_TTY'"
+
+   echo -e "\033[5;10H"
    sh -c "$cmd_show"
    Log "function" "Show() end"
 }
