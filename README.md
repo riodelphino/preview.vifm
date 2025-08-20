@@ -20,11 +20,11 @@ Pictures from <a href="https://unsplash.com/ja/@jeremythomasphoto?utm_content=cr
 
 - MacOS
    - Without nvim  
-      ✓ [vifm](https://github.com/vifm/vifm) < kitty  
-      ✓ [vifm](https://github.com/vifm/vifm) < tmux < kitty  
+      ✓ [vifm](https://github.com/vifm/vifm) on kitty  
+      ✓ [vifm](https://github.com/vifm/vifm) on tmux on kitty  
    - With nvim  
-      ✓ [vifm](https://github.com/vifm/vifm) < nvim < kitty  
-      △ [vifm](https://github.com/vifm/vifm) < nvim < tmux < kitty (`clear` not works)  
+      ✓ [vifm](https://github.com/vifm/vifm) on nvim on kitty  
+      △ [vifm](https://github.com/vifm/vifm) on nvim on tmux on kitty (`clear` not works)  
 
 > [!Warning]
 > Not tested in ohter OS or terminal apps.
@@ -46,7 +46,7 @@ Because of not working `clear` command.
    - `img2sixel`
    - `imgcat`
    - `chafa`
-   - etc
+   - e.t.c.
 
 
 ## Files
@@ -146,8 +146,9 @@ SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scal
 CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
 
 # Images
-IMAGE_QUALITY=80     # {quality}        : Thumbnail quality
-IMAGE_SIZE="600x600" # {width}x{height} : Thumbnail size
+IMAGE_QUALITY=80                # {quality}        : Thumbnail quality
+IMAGE_SIZE="600x600"            # {width}x{height} : Thumbnail size
+IMAGE_COLORSPACE_FORCE_RGB=true # {bool}           : Force 'RGB' for converting images
 
 # Videos
 VIDEO_QUALITY=80   # {quolity}    : Thumbnail quality
@@ -263,11 +264,14 @@ set previewoptions+=graphicsdelay:0
 ```
 
 
-## Known issues
+## Known Issues
 
-- [ ] 'clear' not works in `vifm < nvim < tmux`.
+- [ ] 'clear' not works in `vifm on nvim on tmux`. It causes overlaping images.
 - [ ] Async generation all files not works. It freeze `vifm` for a while.
 - [ ] If `notify.nvim` is shown, the preview position x,y are disturbed.
+- [ ] Even if an image is replaced/updated with a new one, the preview still shows the old image.
+
+## Resolved Issues
 
 ### tty not works
 
@@ -285,11 +289,15 @@ Though that sample code is on kitty official site.
 
 Almost **resolved** by [this lua code](#4-nvim).  
 
-Floating x,y positions or border size  are the cause.  
+Floating x,y positions or border size are the cause.  
 And `set signcolumn=auto` is recommended in nvim's `init.lua`.
 
 
 ## TODO
 
+- [ ] Add command to re-generate cached preview image for current file/dir (Important!)
+- [ ] Supports other terminal apps
+- [ ] Supports other terminal graphics tools
 - [ ] install/uninstall by MakeFile like [https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile](https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile)
 
+## 

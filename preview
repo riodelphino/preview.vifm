@@ -89,7 +89,7 @@ function GeneratePreview() {
    # Generate preview
    if [ ! -f "$preview_path" ]; then
       if [[ $action == "image" ]]; then
-         magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE "$preview_path" &>/dev/null # '&' at last works async ?
+         magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE "$preview_path" $COLOR_SPACE &>/dev/null # '&' at last works async ?
       elif [[ $action == "video" ]]; then
          # ffmpeg -y -i "$file" -vf "select='eq(n,$VIDEO_FRAME)',scale=$VIDEO_SIZE" -frames:v 1 "$preview_path" &>/dev/null # '&' at last works async ?
          ffmpegthumbnailer -s $VIDEO_SIZE -q $VIDEO_QUALITY -t $VIDEO_SEEK_TIME -i "$file" -o "$preview_path" &>/dev/null # '&' at last works async ?
@@ -278,6 +278,12 @@ envrionment=$(GetEnvironment)
 
 # On nvim or not
 nvim=$(IsArrayContained environment {"nvim"})
+
+if $IMAGE_COLORSPACE_FORCE_RGB == true; then
+   COLOR_SPACE="-colorspace RGB"
+else
+   COLOR_SPACE=""
+fi
 
 # Execute Main()
 Main
