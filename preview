@@ -92,8 +92,8 @@ function GeneratePreview() {
          # magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE $COLOR_SPACE "$preview_path" &>/dev/null # '&' at last works async ?
          local colorspace=$(magick identify -format "%[colorspace]" "$file" 2>/dev/null)
 
-         if [[ $colorspace == "CMYK" && $IMAGE_COLORSPACE_FORCE_RGB == true ]]; then
-            magick "$file" -colorspace sRGB -quality $IMAGE_QUALITY -resize $IMAGE_SIZE "$preview_path" &>/dev/null
+         if [[ $colorspace == "CMYK" && $IMAGE_COLORSPACE_CMYK_TO_SRGB == true ]]; then
+            magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE -colorspace sRGB "$preview_path" &>/dev/null
          else
             magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE "$preview_path" &>/dev/null
          fi
@@ -285,12 +285,6 @@ envrionment=$(GetEnvironment)
 
 # On nvim or not
 nvim=$(IsArrayContained environment {"nvim"})
-
-if [[ $IMAGE_COLORSPACE_FORCE_RGB == true ]]; then
-   COLOR_SPACE="-colorspace RGB"
-else
-   COLOR_SPACE=""
-fi
 
 # Execute Main()
 Main

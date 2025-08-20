@@ -146,9 +146,9 @@ SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scal
 CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
 
 # Images
-IMAGE_QUALITY=80                # {quality}        : Thumbnail quality
-IMAGE_SIZE="600x600"            # {width}x{height} : Thumbnail size
-IMAGE_COLORSPACE_FORCE_RGB=true # {bool}           : Force 'RGB' for converting images
+IMAGE_QUALITY=80                   # {quality}        : Thumbnail quality
+IMAGE_SIZE="600x600"               # {width}x{height} : Thumbnail size
+IMAGE_COLORSPACE_CMYK_TO_SRGB=true # {bool}           : Convert 'CMYK' to 'sRGB'
 
 # Videos
 VIDEO_QUALITY=80   # {quolity}    : Thumbnail quality
