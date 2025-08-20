@@ -279,7 +279,7 @@ envrionment=$(GetEnvironment)
 # On nvim or not
 nvim=$(IsArrayContained environment {"nvim"})
 
-if $IMAGE_COLORSPACE_FORCE_RGB == true; then
+if $IMAGE_COLORSPACE_FORCE_RGB; then
    COLOR_SPACE="-colorspace RGB"
 else
    COLOR_SPACE=""
