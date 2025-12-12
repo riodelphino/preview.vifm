@@ -7,49 +7,55 @@ https://github.com/user-attachments/assets/a0ef0f53-ee6a-4ddc-86c0-5e4d15c917c9
 Pictures from <a href="https://unsplash.com/ja/@jeremythomasphoto?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Jeremy Thomas</a> on <a href="https://unsplash.com/ja/%E5%86%99%E7%9C%9F/%E9%9D%92%E3%81%A8%E7%B4%AB%E3%81%AE%E9%8A%80%E6%B2%B3%E3%83%87%E3%82%B8%E3%82%BF%E3%83%AB%E5%A3%81%E7%B4%99-E0AHdsENmDg?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a> 
 
 
+
 ## Features
 
-   - Preview image/video as jpg
-   - Faster previewing with cache files
-   - Batch generation for all matched files in current dir
-   - Modifiable graphic protocol command
-   - Logging for debug
+- Preview image/video as jpg
+- Cache preview files (much faster)
+- Generate preview files asyncronously for current dir
+- Graphic protocol command is modifiable
+- Logging for debug
 
 
-## Ensured to work
+## Requirements
 
+Ensured to work with:
 - MacOS
-   - Without nvim  
-      ✓ [vifm](https://github.com/vifm/vifm) on kitty  
-      ✓ [vifm](https://github.com/vifm/vifm) on tmux on kitty  
-   - With nvim  
-      ✓ ([fm-nvim](https://github.com/is0n/fm-nvim) + [vifm](https://github.com/vifm/vifm)) on nvim on kitty  
-      △ ([fm-nvim](https://github.com/is0n/fm-nvim) + [vifm](https://github.com/vifm/vifm)) on nvim on tmux on kitty (`clear` not works)  
+   - kitty
+      - ✓ vifm directly use (Need to set `TERM` environmental variable)
+      - nvim
+         - ✓ [vifm.vim](https://github.com/vifm/vifm.vim)
+         - ✓ [fm-nvim](https://github.com/is0n/fm-nvim)
+      - tmux
+         - ✓ vifm (directly use)
+         - nvim
+            - △ [vifm.vim](https://github.com/vifm/vifm.vim) (`clear` not works)  
+            - △ [fm-nvim](https://github.com/is0n/fm-nvim) (`clear` not works)  
+- Linux
+   - Not tested
+- Windows
+   - Not tested
 
 > [!Warning]
 > Not tested in ohter OS or terminal apps.
 
 
-## Not fully functional
-
-The images are shown disturbed & overlapped in `vifm on nvim on tmux`, with plugins like [vifm.vim](https://github.com/vifm/vifm.vim) or [fm-nvim](https://github.com/is0n/fm-nvim).  
-Because of not working `clear` command.
 
 
 ## Graphic protocols
 
-**Tested & works**
-   - `kitten icat`  
+Supported:
+- `kitten icat`  
 
-**Not tested**
-   - `timg`
-   - `img2sixel`
-   - `imgcat`
-   - `chafa`
-   - e.t.c.
+Not tested:
+- `timg`
+- `img2sixel`
+- `imgcat`
+- `chafa`
+- e.t.c.
 
 
-## Files
+## Structure
 
 ```txt
 ├── README.md      : this file  
@@ -60,13 +66,13 @@ Because of not working `clear` command.
 
 ## Command usage
 
-```txt
+```man
 USAGE:
    preview [action] [file] [pw] [ph] [px] [py] [patterns]
 
 ARGS:
-   action    : clear | image | video ...
-   file      : target filename
+   action    : clear | dir | image | video ...
+   path      : target path
    pw        : panel width
    ph        : panel height
    px        : panel x
@@ -76,9 +82,11 @@ ARGS:
 SAMPLE CODE:
    Clear:
       preview clear
-   For images:
+   Generate previews for images/videos in a directory:
+      preview dir /path/to/dir
+   Generate preview for a image:
       preview image %c %pw %ph %px %py '*.jpg,*.png'
-   For videos:
+   Generate preview for a video:
       preview video %c %pw %ph %px %py '*.mp4,*.mov'
 
 DEPENDENCIES:
@@ -97,37 +105,38 @@ ln -s preview.vifm/preview preview # vifm do not read scripts's sub dir somewhy,
 
 ## Setup
 
-Follow these 5 steps.
+Follow these 4 steps.  
+
+1. `.zshrc` or `.bashrc`
+2. `config` in preview.vifm
+3. `vifmrc`
+4. `init.lua` in nvim
+
+(It would be nice if the steps could be reduced.)
 
 
-### 1. zsh or bash
+### 1 .zshrc or .bashrc
 
 Add this code to `~/.zshrc` or `~/.bashrc`
 
 ```bash
-export VIFM_PREVIEW_UUID="$(uuidgen)"
-export VIFM_PREVIEW_TTY="$(tty)"
+export VIFM_PREVIEW_TTY="$(tty)"      # Records `tty` on terminal init (e.g. like `/dev/tts001`)
+export VIFM_PREVIEW_UUID="$(uuidgen)" # `UUID` is set for future expansion
 ```
-
-This code records `tty` like `/dev/tts001` on terminal init.  
-`UUID` is set for future expansion.
-
-Remember to execute `source ~/.zshrc` in terminal.
+Ensure to execute `source ~/.zshrc` or `source ~/.bashrc` in terminal.
 
 > [!Note]
-> Only terminal returns `tty` correctry.
-> `tty` command on vifmrc returns error, like `not a tty`.
-> That's the reason for inserting this code.
+> Though the `tty` command on terminal returns tty correctry, the same command on vifmrc doesn't return tty. (e.g. `not a tty` error)
+> Ensure to get tty with above code.
 
 > [!Warning]
-> This setup is for `vifm on tmux on kitty`.
-> If you use in `vifm on kitty`, the `TERM` environmental variable has to be set.
-> e.g.) `export TERM=xterm-256color`
+> This setup is for `vifm on tmux`.
+> If you use `vifm` directly , the `TERM` environmental variable has to be set. (e.g. `export TERM=xterm-256color`)
 > Otherwise, the preview shows error, because the `tty` command returns `` empty string.
 
-### 2. Config
+### 2. Config in preview.vifm
 
-Default settings are in `config.default`.  
+Default settings are stored in `config.default`.  
 Copy it & rename to `config`, then modify it.
 
 If `config` not exists, plugin uses `config.default`.
@@ -154,65 +163,76 @@ CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
 IMAGE_QUALITY=80                   # {quality}        : Thumbnail quality
 IMAGE_SIZE="600x600"               # {width}x{height} : Thumbnail size
 IMAGE_COLORSPACE_CMYK_TO_SRGB=true # {bool}           : Convert 'CMYK' to 'sRGB'
+IMAGE_PATTERNS="*.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm,*.avif,*.webp,*.heic" # image patterns
 
 # Videos
 VIDEO_QUALITY=80   # {quolity}    : Thumbnail quality
 VIDEO_SEEK_TIME=10 # {percentage} : Seek time (%) of the total video duration
 VIDEO_SIZE=640     # {size}       : Thumbnail size. cropped to fit within {size}x{size}
+VIDEO_PATTERNS="*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],*.qt,*.divx,*.as[fx]" # video patterns
 ```
 
-> [!Note]
-> The placeholders `%pw`, `%ph`, `%px`, `%py`, `%file`, and `%tty` will be replaced with their actual values in preview command.
+The placeholders `%pw`, `%ph`, `%px`, `%py`, `%file`, and `%tty` will be replaced with their actual values in preview command.
 
-> [!Note]
-> ex.) IMAGE_SIZE="1376x1617"  
-> Set measured exact size for your vifm window in bare terminal, then remove '--scale-up' option from SHOW_CMD_TEMPLATE.  
-> It allows faster previw, but increases cache file size.
+For faster previw (but increases cache file size instead):
+1. Set measured exact size for your vifm window in bare terminal. (e.g `IMAGE_SIZE="1376x1617"`)
+2. Then remove `--scale-up` option from `SHOW_CMD_TEMPLATE`.  
 
 
+#### Preview commands for graphic protocols
 
+##### kitten icat
+WORKS. Same above.
+```bash
+SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
+CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
+```
 
-#### Sample for other graphic protocols
-
+##### timg
+NOT WORKS YET. Colors & text block images are disturbed.  
+`timg` may not be supported. Need your inspection and PR.
 ```bash
 # --- timg
-# Sorry, NOT WORKS CORRECTLY. It shows disturbed color & text block images.
 SHOW_CMD_TEMPLATE='timg -p sixel -g %pwx%ph "%file"'
 CLEAR_CMD_TEMPLATE='timg -clear'
 ```
 
+##### Others
+NEED YOUR PR!!
+
 
 ### 3. vifmrc
 
-Add this code to `~/.config/vifmrc`
+Add this code to `~/.config/vifm/vifmrc`
 
 ```vim
 " For images
-let $IMAGE_PATTERNS = '*.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm,*.avif,*.webp,*.heic'
 fileviewer {*.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm,*.avif,*.webp,*.heic},<image/*>
-   \ preview image %c %pw %ph %px %py $IMAGE_PATTERNS
+   \ preview image %c %pw %ph %px %py
    \ %pc
    \ preview clear
 
 " For videos
-let $VIDEO_PATTERNS = '*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],*.qt,*.divx,*.as[fx]'
 fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],*.qt,*.divx,*.as[f},
-   \ preview video %c %pw %ph %px %py $VIDEO_PATTERNS
+   \ preview video %c %pw %ph %px %py
    \ %pc
    \ preview clear
-```
 
-> [!Note]
-> Variable expansion is not allowed in file pattern list, like `fileviwer {$VIDEO_PATTERNS}`. Hmmm, It's redundant...
+" For directory
+autocmd DirEnter * !preview dir %d
+
+" To get faster previewing, add this line
+set previewoptions+=graphicsdelay:0
+```
 
 > [!Note]
 > `%pc` is just a delimiter, between displaying command and cleaning command.
 
 
-### 4. nvim
+### 4. init.lua in nvim
 
 If you use vifm on nvim, set this code to `init.lua`.  
-With lazy.nvim, you can set it to `config = funciton() ... end` section on the settings for [vifm.vim](https://github.com/vifm/vifm.vim) / [fm-nvim](https://github.com/is0n/fm-nvim)
+With `lazy.nvim`, you can set it to `config = funciton() ... end` section on the settings for [vifm.vim](https://github.com/vifm/vifm.vim) / [fm-nvim](https://github.com/is0n/fm-nvim)
 
 ```lua
 -- init.lua
@@ -242,7 +262,7 @@ function get_window_info()
    return x, y, w, h, bw
 end
 
-vim.api.nvim_create_autocmd({ 'WinEnter' }, { -- 'TermEnter' fails at first `:Vifm` execution
+vim.api.nvim_create_autocmd({ 'WinEnter' }, {
    pattern = { '*' },
    callback = function()
       local x, y, w, h, bw = get_window_info()
@@ -254,33 +274,28 @@ vim.api.nvim_create_autocmd({ 'WinEnter' }, { -- 'TermEnter' fails at first `:Vi
       print(string.format('%dx%d @ %dx%d (%d)', w, h, x, y, bw)) -- Check code
    end,
 })
+-- NOTE: 'TermEnter' fails at the first `:Vifm` execution
 ```
 This saves x,y,w,h,boder_width values to environmental variables, and `preview` command uses them for adjusting showing position.
 
 (The w,h are for future expansion.)
 
 
-### 5. vifm
-
-To get faster previewing, add below code to `vifmrc`.
-
-```vim
-set previewoptions+=graphicsdelay:0
-```
-
 
 ## Known Issues
 
+- [ ] Everytime re-generates previews in `DirEnter`
 - [ ] 'clear' not works in `vifm on nvim on tmux`. It causes overlaping images.
-- [ ] Async generation all files not works. It freeze `vifm` for a while.
 - [ ] If `notify.nvim` is shown, the preview position x,y are disturbed.
 - [ ] Even if an image is replaced/updated with a new one, the preview still shows the old image.
+- [ ] The images are shown disturbed & overlapped in `tmux + nvim + vifm(with plugin)`, Because of not working `clear` command.
+
 
 ## Resolved Issues
 
 ### tty not works
 
-**Resolved** by [this sh code](#1-zsh-or-bash)
+**Resolved** by [#1-zshrc-or-bashrc](#1-zshrc-or-bashrc)
 
 `tty` command returns like `/dev/ttys001` values on a `bare terminal` or `tmux`.
 But `tty` command returns `not a tty` strings in `vifmrc` or `nvim`.  
@@ -292,7 +307,7 @@ Though that sample code is on kitty official site.
 
 ### Shown in out of place
 
-Almost **resolved** by [this lua code](#4-nvim).  
+Almost **resolved** by [#4-initlua-in-nvim](#4-initlua-in-nvim).  
 
 Floating x,y positions or border size are the cause.  
 And `set signcolumn=auto` is recommended in nvim's `init.lua`.
@@ -301,8 +316,9 @@ And `set signcolumn=auto` is recommended in nvim's `init.lua`.
 ## TODO
 
 - [ ] Supports gif images
-- [ ] Add command to re-generate cached preview image for current file/dir (Important!)
-- [ ] Add command to delete all cached preview images
+- [ ] Avoid re-generating previews everytime in `DirEnter`
+- [ ] Add command to re-generate cached preview image for current file/dir (e.g. `preview refresh %d`)
+- [ ] Add command to delete all cached preview images (e.g. `preview delete %d`)
 - [ ] Supports other terminal apps
 - [ ] Supports other terminal graphics tools
 - [ ] install/uninstall by MakeFile like [https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile](https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile)

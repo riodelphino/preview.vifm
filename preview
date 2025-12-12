@@ -16,6 +16,38 @@ function Log() {
    fi
 }
 
+function LockFileName() {
+   local target=$1
+   local action=$2
+   local path=$3
+   local lock_file_name
+   if [[ $target == "directory" ]]; then
+      local dir=$path
+      lock_file_name="$dir/.preview-vifm.$action.lock"
+   elif [[ $target == "file" ]]; then
+      local dir=$(dirname "$path")
+      local base=$(basename "$path")
+      lock_file_name="$dir/.${base}.lock"
+   fi
+   echo "$lock_file_name"
+   Log "lock_file_name" "$lock_file_name"
+}
+
+Lock() {
+   local lock_file_name=$1
+   touch "$lock_file_name"
+}
+
+Unlock() {
+   local lock_file_name=$1
+   rm "$lock_file_name"
+}
+
+function IsLocked() {
+   local lock_file_name=$1
+   [[ -f "$lock_file_name" ]]
+}
+
 # get environment as array
 # like ['nvim', 'tmux'] or ['nvim', 'terminal'] or ['terminal'] or ['tmux']
 GetEnvironment() {
@@ -29,35 +61,6 @@ GetEnvironment() {
       env_array+=("terminal")
    fi
    echo "${env_array[@]}"
-}
-
-# Set current directory
-function SetPrevDir() {
-   printf "%s" "$cur_dir" >"$prev_dir_file"
-}
-
-# Set current action
-function SetPrevAction() {
-   echo "$action" >"$prev_action_file"
-}
-
-# Get previous directory
-function GetPrevDir() {
-   if [[ -f "$prev_dir_file" ]]; then
-      IFS= read -r prev_dir <"$prev_dir_file"
-      echo -n "$prev_dir" # 末尾のスペースを保持
-   else
-      echo ""
-   fi
-}
-
-# Get previous action
-function GetPrevAction() {
-   if [ -f "$prev_action_file" ]; then
-      cat "$prev_action_file"
-   else
-      echo ""
-   fi
 }
 
 function IsArrayContained() {
@@ -104,46 +107,51 @@ function GeneratePreview() {
          Log "ERROR" "[action] '$action' not matched."
       fi
    fi
-   Log "preview_path" "$preview_path"
 
-   echo $preview_path
+   Log "preview_path" "$preview_path"
    Log "function" "GeneratePreview() processed '$file'"
+   echo $preview_path
 }
 
 # Generate previews for all matched files in dir
 function GeneratePreviewAll() {
-   Log "prev_action" "$prev_action"
-   Log "prev_dir" "$prev_dir"
-   if [[ "$action" == "$prev_action" && "$cur_dir" == "$prev_dir" ]]; then # Only if action & dir is different from previous
-      Log "function" "Skipped GeneratePreviewAll(), for the action & dir are same as previous"
+   local action=$1
+   local dir="$2"
+   local patterns="$3"
+
+   local cnt=0
+
+   Log "function" "GeneratePreviewAll() started in '$dir'"
+
+   local lock_file_name=$(LockFileName "directory" $action "$dir")
+   if IsLocked "$lock_file_name"; then
+      Log "locked" "Current dir is locked. Skip generating '$action' in '$dir'"
       return 1
    fi
 
-   Log "function" "GeneratePreviewAll() started in '$cur_dir'"
-
-   local action=$1
-   local patterns="$2"
-   local cnt=0
+   Lock $lock_file_name
 
    # List files in the directory and loop through each pattern
    IFS=',' read -r -a pat_array <<<"$patterns"
+   local jobs=()
    for pat in "${pat_array[@]}"; do
       Log "pat" "${pat}"
       # For each pattern, find matching files
-      for file in "$cur_dir"/$pat; do
+      for file in "$dir"/$pat; do
          # Only proceed if $file is a regular file
          if [[ -f "$file" ]]; then
             Log "file" "$file"
-            local preview=$(GeneratePreview $action "$file" &) # Execute without echo
+            local preview_path=$(GeneratePreview $action "$file" &)
+            jobs+=($!)
             ((cnt++))
-            Log 'cnt' "$cnt files processed"
          fi
       done
    done
-   wait
-   echo $cnt
 
-   Log "function" "GeneratePreviewAll() processed $cnt files"
+   # wait "${jobs[@]}" # ERROR: "PID * is not a valid child process"
+   wait
+   Unlock $lock_file_name
+   Log "function" "GeneratePreviewAll() processed $cnt files for $action in '$dir'"
 }
 
 # Replace % placeholders to actual values
@@ -163,9 +171,9 @@ function ReplacePlaceholders() {
       cmd="${cmd//%file/$preview_path}"
    fi
 
-   echo "$cmd"
    Log "cmd_replaced" "$cmd"
    Log "function" "ReplacePlaceholders() end"
+   echo "$cmd"
 }
 
 # Clear
@@ -197,11 +205,10 @@ function Main() {
    # Logging
    Log "" ""
    Log "start" "preview command start ----------------------------------------------------------"
-   Log "action" "$action"
-   Log "filename" "$file"
+   Log "action" "$subcmd"
+   Log "filename" "$path"
    Log "size" "$pw x $ph"
    Log "pos" "$px x $py"
-   Log "prev_dir" "$prev_dir"
    Log "cur_dir" "$cur_dir"
    Log "cmd_show_template" "$SHOW_CMD_TEMPLATE"
    Log "cmd_clear_template" "$CLEAR_CMD_TEMPLATE"
@@ -209,26 +216,19 @@ function Main() {
    # Create cache directory
    mkdir -p "$CACHE_DIR"
 
-   # ----- [action]: clear
-   if [[ $action == "clear" ]]; then # quick & first not to loss time
+   # Execute actions
+   if [[ $subcmd == "clear" ]]; then # clear
       Clear
-      exit
+   elif [[ $subcmd == "dir" ]]; then # generate for current dir
+      GeneratePreviewAll image "$path" $IMAGE_PATTERNS &
+      GeneratePreviewAll video "$path" $VIDEO_PATTERNS &
+   elif [[ $subcmd == "image" ]]; then # generate & show preview for a image
+      local preview_path=$(GeneratePreview $subcmd "$path" $IMAGE_PATTERNS &)
+      Show "$preview_path"
+   elif [[ $subcmd == "video" ]]; then # generate & show preview for a video
+      local preview_path=$(GeneratePreview $subcmd "$path" $VIDEO_PATTERNS &)
+      Show "$preview_path"
    fi
-
-   # ----- [action]: others
-
-   # Generate preview for selected file
-   local preview_path=$(GeneratePreview $action "$file" &) # async not works...
-
-   # Show preview
-   Show "$preview_path"
-
-   # Generate previews for pattern matched files in cur_dir
-   local processed_cnt=$(GeneratePreviewAll $action "$patterns" &) # async not works...
-
-   # Record current dir & action
-   SetPrevDir
-   SetPrevAction
 }
 
 # --------------------------------------------------------------------------------
@@ -249,16 +249,15 @@ fi
 # --------------------------------------------------------------------------------
 
 # Get args
-action=$1
-file=$2
+subcmd=$1
+path=$2
 pw=$3
 ph=$4
 px=$5
 py=$6
-patterns=$7
 
 # Adjust args
-file="${file//\\ / }" # replate '\ ' to ' '
+path="${path//\\ / }" # replate '\ ' to ' '
 
 # Omit for action:clear to cause error
 # # Validate
@@ -269,16 +268,9 @@ file="${file//\\ / }" # replate '\ ' to ' '
 
 # Path for log
 log_file="$CACHE_DIR/log"
-# Path for saving previous dir & action
-prev_action_file="$CACHE_DIR/prev_action"
-prev_dir_file="$CACHE_DIR/prev_dir"
 
 # Previous/current directories
-cur_dir=$(dirname "$(realpath "$file")")
-prev_dir=$(GetPrevDir)
-
-# Previous action
-prev_action=$(GetPrevAction)
+cur_dir=$(dirname "$(realpath "$path")")
 
 # Environment, like nvim, tmux, terminal
 envrionment=$(GetEnvironment)
