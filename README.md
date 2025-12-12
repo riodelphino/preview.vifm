@@ -23,8 +23,8 @@ Pictures from <a href="https://unsplash.com/ja/@jeremythomasphoto?utm_content=cr
       ✓ [vifm](https://github.com/vifm/vifm) on kitty  
       ✓ [vifm](https://github.com/vifm/vifm) on tmux on kitty  
    - With nvim  
-      ✓ [vifm](https://github.com/vifm/vifm) on nvim on kitty  
-      △ [vifm](https://github.com/vifm/vifm) on nvim on tmux on kitty (`clear` not works)  
+      ✓ ([fm-nvim](https://github.com/is0n/fm-nvim) + [vifm](https://github.com/vifm/vifm)) on nvim on kitty  
+      △ ([fm-nvim](https://github.com/is0n/fm-nvim) + [vifm](https://github.com/vifm/vifm)) on nvim on tmux on kitty (`clear` not works)  
 
 > [!Warning]
 > Not tested in ohter OS or terminal apps.
@@ -119,6 +119,11 @@ Remember to execute `source ~/.zshrc` in terminal.
 > `tty` command on vifmrc returns error, like `not a tty`.
 > That's the reason for inserting this code.
 
+> [!Warning]
+> This setup is for `vifm on tmux on kitty`.
+> If you use in `vifm on kitty`, the `TERM` environmental variable has to be set.
+> e.g.) `export TERM=xterm-256color`
+> Otherwise, the preview shows error, because the `tty` command returns `` empty string.
 
 ### 2. Config
 
@@ -295,9 +300,10 @@ And `set signcolumn=auto` is recommended in nvim's `init.lua`.
 
 ## TODO
 
+- [ ] Supports gif images
 - [ ] Add command to re-generate cached preview image for current file/dir (Important!)
+- [ ] Add command to delete all cached preview images
 - [ ] Supports other terminal apps
 - [ ] Supports other terminal graphics tools
 - [ ] install/uninstall by MakeFile like [https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile](https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile)
 
-## 
