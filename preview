@@ -58,22 +58,22 @@ SetStatus() {
    if [[ -d "$path" ]]; then # directory
       local hash_filename="$CACHE_DIR/$hash.dir.$action"
       if [[ "$status" == "done" ]]; then
-         trash -f "$hash_filename.lock"
+         rm -f "$hash_filename.lock"
          touch "$hash_filename"
       elif [[ "$status" == "locked" ]]; then
          touch "$hash_filename.lock"
       elif [[ "$status" == "none" ]]; then
-         trash -f "$hash_filename"
+         rm -f "$hash_filename"
       fi
    elif [[ -f "$path" ]]; then # file
       local hash_filename="$CACHE_DIR/$hash.jpg"
       if [[ "$status" == "done" ]]; then
-         trash -f "$hash_filename.lock"
+         rm -f "$hash_filename.lock"
          # touch "$hash_filename" # Do not overwrite the preview file
       elif [[ "$status" == "locked" ]]; then
          touch "$hash_filename.lock"
       elif [[ "$status" == "none" ]]; then
-         trash -f "$hash_filename"
+         rm -f "$hash_filename"
       fi
    fi
 }
@@ -267,7 +267,7 @@ Main() {
       GeneratePreviewAll image "$path" $IMAGE_PATTERNS "force" >/dev/null 2>&1 &
       GeneratePreviewAll video "$path" $VIDEO_PATTERNS "force" >/dev/null 2>&1 &
    elif [[ $subcmd == "delete" ]]; then
-      trash "$CACHE_DIR"/*
+      rm -f "$CACHE_DIR"/*
    fi
 }
 
