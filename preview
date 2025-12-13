@@ -166,7 +166,8 @@ GeneratePreviewAll() {
          # Only proceed if $file is a regular file
          if [[ -f "$file" ]]; then
             Log "preview_all.file" "$action" "file='$file'"
-            local preview_path=$(GeneratePreview $action "$file" &)
+            # local preview_path=$(GeneratePreview $action "$file" &)
+            GeneratePreview $action "$file" &
             # jobs+=($!) # TODO: REMOVE
             ((cnt++))
          fi
@@ -243,14 +244,19 @@ Main() {
    mkdir -p "$CACHE_DIR"
 
    # Execute actions
-   if [[ $subcmd == "clear" ]]; then # clear
+   if [[ $subcmd == "clear" ]]; then
+      # clear
       Clear
-   elif [[ $subcmd == "image" ]]; then # generate & show preview for a image
-      GeneratePreviewAll $action "$parent" $IMAGE_PATTERNS &
+   elif [[ $subcmd == "image" ]]; then
+      # Generate preview files for all images in parent dir in background
+      GeneratePreviewAll $subcmd "$parent" $IMAGE_PATTERNS >/dev/null 2>&1 &
+      # Preview a image
       local preview_path=$(GeneratePreview $subcmd "$path" $IMAGE_PATTERNS)
       Show "$preview_path"
-   elif [[ $subcmd == "video" ]]; then # generate & show preview for a video
-      GeneratePreviewAll $action "$parent" $VIDEO_PATTERNS &
+   elif [[ $subcmd == "video" ]]; then
+      # Generate preview files for all videos in parent dir in background
+      GeneratePreviewAll $subcmd "$parent" $VIDEO_PATTERNS >/dev/null 2>&1 &
+      # Preview a video
       local preview_path=$(GeneratePreview $subcmd "$path" $VIDEO_PATTERNS)
       Show "$preview_path"
    fi
