@@ -103,15 +103,16 @@ IsContained() {
 GeneratePreview() {
    local action=$1
    local file="$2"
-   # local async="$3"
+   local force=$3
+
    Log "preview.start" "$action" "file='$file'"
 
    # Get preview filename (hash)
-   local hash=$(echo $(realpath "$file") | sha256sum | cut -d' ' -f1) # get hash
-   local preview_path="$CACHE_DIR/$hash.jpg"                          # preview path
+   local hash=$(GetHash "$file")
+   local preview_path="$CACHE_DIR/$hash.jpg"
 
    # Generate preview
-   if [ ! -f "$preview_path" ]; then
+   if [[ ! -f "$preview_path" || "$force" == "force" ]]; then
       if [[ $action == "image" ]]; then
          # magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE $COLOR_SPACE "$preview_path" &>/dev/null # '&' at last works async ?
          local colorspace=$(magick identify -format "%[colorspace]" "$file" 2>/dev/null)
@@ -167,7 +168,7 @@ GeneratePreviewAll() {
          if [[ -f "$file" ]]; then
             Log "preview_all.file" "$action" "file='$file'"
             # local preview_path=$(GeneratePreview $action "$file" &)
-            GeneratePreview $action "$file" &
+            GeneratePreview $action "$file" $force &
             # jobs+=($!) # TODO: REMOVE
             ((cnt++))
          fi
