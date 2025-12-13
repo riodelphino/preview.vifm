@@ -247,6 +247,10 @@ Main() {
    if [[ $subcmd == "clear" ]]; then
       # clear
       Clear
+   elif [[ $subcmd == "dir" ]]; then
+      # == Legacy == Generate preview files for all images|videos in dir in background
+      GeneratePreviewAll image "$path" $IMAGE_PATTERNS >/dev/null 2>&1 &
+      GeneratePreviewAll video "$path" $VIDEO_PATTERNS >/dev/null 2>&1 &
    elif [[ $subcmd == "image" ]]; then
       # Generate preview files for all images in parent dir in background
       GeneratePreviewAll $subcmd "$parent" $IMAGE_PATTERNS >/dev/null 2>&1 &
@@ -259,6 +263,11 @@ Main() {
       # Preview a video
       local preview_path=$(GeneratePreview $subcmd "$path" $VIDEO_PATTERNS)
       Show "$preview_path"
+   elif [[ $subcmd == "refresh" ]]; then
+      GeneratePreviewAll image "$path" $IMAGE_PATTERNS "force" >/dev/null 2>&1 &
+      GeneratePreviewAll video "$path" $VIDEO_PATTERNS "force" >/dev/null 2>&1 &
+   elif [[ $subcmd == "delete" ]]; then
+      trash "$CACHE_DIR"/*
    fi
 }
 

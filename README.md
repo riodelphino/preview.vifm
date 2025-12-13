@@ -80,14 +80,23 @@ ARGS:
    patterns  : file patterns (delimiter = ',')
 
 SAMPLE CODE:
-   Clear:
+   Clear the preview in screen:
       preview clear
-   Generate previews for images/videos in a directory:
+
+   Generate previews for images/videos in a directory (== Legacy ==):
       preview dir /path/to/dir
-   Generate preview for a image:
-      preview image %c %pw %ph %px %py '*.jpg,*.png'
-   Generate preview for a video:
-      preview video %c %pw %ph %px %py '*.mp4,*.mov'
+
+   Generate a preview file for a image:
+      preview image %c %pw %ph %px %py
+
+   Generate a preview file for a video:
+      preview video %c %pw %ph %px %py
+
+   Refresh preview files for current dir:
+      preview refresh %d
+
+   Delete all preview files:
+      preview delete
 
 DEPENDENCIES:
    - imagemagick
@@ -218,11 +227,16 @@ fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[ic
    \ %pc
    \ preview clear
 
+" == Disabled because DirEnter flickers vifm window ==
 " For directory
-autocmd DirEnter * !preview dir %d
+" autocmd DirEnter * !preview dir %d
 
 " To get faster previewing, add this line
 set previewoptions+=graphicsdelay:0
+
+" Keybind for preview.vifm
+nnoremap pr :!preview refresh %d<cr>
+nnoremap pd :!preview delete<cr>
 ```
 
 > [!Note]
@@ -284,10 +298,8 @@ This saves x,y,w,h,boder_width values to environmental variables, and `preview` 
 
 ## Known Issues
 
-- [ ] Everytime re-generates previews in `DirEnter`
 - [ ] 'clear' not works in `vifm on nvim on tmux`. It causes overlaping images.
 - [ ] If `notify.nvim` is shown, the preview position x,y are disturbed.
-- [ ] Even if an image is replaced/updated with a new one, the preview still shows the old image.
 - [ ] The images are shown disturbed & overlapped in `tmux + nvim + vifm(with plugin)`, Because of not working `clear` command.
 
 
@@ -315,10 +327,7 @@ And `set signcolumn=auto` is recommended in nvim's `init.lua`.
 
 ## TODO
 
-- [ ] Supports gif images
-- [ ] Avoid re-generating previews everytime in `DirEnter`
-- [ ] Add command to re-generate cached preview image for current file/dir (e.g. `preview refresh %d`)
-- [ ] Add command to delete all cached preview images (e.g. `preview delete %d`)
+- [ ] Supports gif images?
 - [ ] Supports other terminal apps
 - [ ] Supports other terminal graphics tools
 - [ ] install/uninstall by MakeFile like [https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile](https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile)
