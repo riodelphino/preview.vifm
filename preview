@@ -8,11 +8,12 @@ SCRIPT_NAME='preview.vifm'
 
 # Loging
 function Log() {
-   local label="$1"
-   local value="$2"
+   local category="$1"
+   local label="$2"
+   local value="$3"
    local length=20
    if [[ $LOG_ENABLED == true ]]; then
-      printf "%-${length}s: %s\n" "$label" "$value" >>"$log_file"
+      printf "[ %-${length}s ] %-${length}s: %s\n" "$category" "$label" "$value" >>"$log_file"
    fi
 }
 
@@ -30,7 +31,7 @@ function LockFileName() {
       lock_file_name="$dir/.${base}.lock"
    fi
    echo "$lock_file_name"
-   Log "lock_file_name" "$lock_file_name"
+   Log "lock" "$action" "lock_file_name='$lock_file_name'"
 }
 
 Lock() {
@@ -83,7 +84,7 @@ function GeneratePreview() {
    local action=$1
    local file="$2"
    # local async="$3"
-   Log "function" "GeneratePreview() start for '$file'"
+   Log "preview.start" "$action" "file='$file'"
 
    # Get preview filename (hash)
    local hash=$(echo $(realpath "$file") | sha256sum | cut -d' ' -f1) # get hash
@@ -104,12 +105,12 @@ function GeneratePreview() {
          # ffmpeg -y -i "$file" -vf "select='eq(n,$VIDEO_FRAME)',scale=$VIDEO_SIZE" -frames:v 1 "$preview_path" &>/dev/null # '&' at last works async ?
          ffmpegthumbnailer -s $VIDEO_SIZE -q $VIDEO_QUALITY -t $VIDEO_SEEK_TIME -i "$file" -o "$preview_path" &>/dev/null # '&' at last works async ?
       else
-         Log "ERROR" "[action] '$action' not matched."
+         Log "preview.error" "'$action' is not a valid action."
       fi
    fi
 
-   Log "preview_path" "$preview_path"
-   Log "function" "GeneratePreview() processed '$file'"
+   Log "preview.path" "$action" "path='$preview_path'"
+   Log "preview.end" "$action" "processed '$file'"
    echo $preview_path
 }
 
@@ -121,11 +122,11 @@ function GeneratePreviewAll() {
 
    local cnt=0
 
-   Log "function" "GeneratePreviewAll() started in '$dir'"
+   Log "preview_all.start" "$action" "dir='$dir'"
 
    local lock_file_name=$(LockFileName "directory" $action "$dir")
    if IsLocked "$lock_file_name"; then
-      Log "locked" "Current dir is locked. Skip generating '$action' in '$dir'"
+      Log "preview_all.locked" "$action" "Skip generating all in '$dir'"
       return 1
    fi
 
@@ -135,12 +136,12 @@ function GeneratePreviewAll() {
    IFS=',' read -r -a pat_array <<<"$patterns"
    local jobs=()
    for pat in "${pat_array[@]}"; do
-      Log "pat" "${pat}"
+      Log "preview_all.pattern" "$action" "pat='$pat'"
       # For each pattern, find matching files
       for file in "$dir"/$pat; do
          # Only proceed if $file is a regular file
          if [[ -f "$file" ]]; then
-            Log "file" "$file"
+            Log "preview_all.file" "$action" "file='$file'"
             local preview_path=$(GeneratePreview $action "$file" &)
             jobs+=($!)
             ((cnt++))
@@ -151,15 +152,16 @@ function GeneratePreviewAll() {
    # wait "${jobs[@]}" # ERROR: "PID * is not a valid child process"
    wait
    Unlock $lock_file_name
-   Log "function" "GeneratePreviewAll() processed $cnt files for $action in '$dir'"
+   Log "preview_all.end" "$action" "processed $cnt files in '$dir'"
 }
 
 # Replace % placeholders to actual values
-function ReplacePlaceholders() {
+function GetCmd() {
    local cmd="$1"
    local preview_path="$2"
-   Log "function" "ReplacePlaceholders() start"
-   Log "cmd_template" "$cmd"
+   Log "get_cmd.start" "" ""
+   Log "get_cmd.template" "" "cmd='$1'"
+   Log "get_cmd.path" "" "preview_path='$preview_path'"
 
    # Replace
    cmd="${cmd//%pw/$pw}"
@@ -171,31 +173,30 @@ function ReplacePlaceholders() {
       cmd="${cmd//%file/$preview_path}"
    fi
 
-   Log "cmd_replaced" "$cmd"
-   Log "function" "ReplacePlaceholders() end"
+   Log "get_cmd.cmd" "" "$cmd"
    echo "$cmd"
 }
 
 # Clear
 function Clear() {
-   Log "function" "Clear() start"
-   local cmd_clear=$(ReplacePlaceholders "$CLEAR_CMD_TEMPLATE" "")
+   Log "clear.start" "" ""
+   local cmd_clear=$(GetCmd "$CLEAR_CMD_TEMPLATE" "")
    sh -c "$cmd_clear"
-   Log "function" "Clear() end"
+   Log "clear.end" "" ""
 }
 
 # Show preview
 function Show() {
-   Log "function" "Show() start"
+   local preview_path="$1"
+   Log "show.start" "" ""
    # Adjust x,y on nvim
    if [[ $nvim ]]; then
       px=$((px + VIFM_PREVIEW_WIN_X + VIFM_PREVIEW_WIN_BORDER_WIDTH))
       py=$((py + VIFM_PREVIEW_WIN_Y + VIFM_PREVIEW_WIN_BORDER_WIDTH))
    fi
-   local preview_path="$1"
-   local cmd_show=$(ReplacePlaceholders "$SHOW_CMD_TEMPLATE" "$preview_path")
+   local cmd_show=$(GetCmd "$SHOW_CMD_TEMPLATE" "$preview_path")
    sh -c "$cmd_show"
-   Log "function" "Show() end"
+   Log "show.end" "" "$preview_path"
 }
 
 # --------------------------------------------------------------------------------
@@ -203,15 +204,15 @@ function Show() {
 # --------------------------------------------------------------------------------
 function Main() {
    # Logging
-   Log "" ""
-   Log "start" "preview command start ----------------------------------------------------------"
-   Log "action" "$subcmd"
-   Log "filename" "$path"
-   Log "size" "$pw x $ph"
-   Log "pos" "$px x $py"
-   Log "cur_dir" "$cur_dir"
-   Log "cmd_show_template" "$SHOW_CMD_TEMPLATE"
-   Log "cmd_clear_template" "$CLEAR_CMD_TEMPLATE"
+   Log "" "" ""
+   Log "main.start" "$subcmd" "----------------------------------------------------------"
+   Log "ctx" "subcmd" "$subcmd"
+   Log "ctx" "path" "$path"
+   Log "ctx" "size" "$pw x $ph"
+   Log "ctx" "pos" "$px x $py"
+   Log "ctx" "cur_dir" "$cur_dir"
+   Log "ctx" "cmd_show_template" "$SHOW_CMD_TEMPLATE"
+   Log "ctx" "cmd_clear_template" "$CLEAR_CMD_TEMPLATE"
 
    # Create cache directory
    mkdir -p "$CACHE_DIR"
