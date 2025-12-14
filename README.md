@@ -7,13 +7,13 @@ https://github.com/user-attachments/assets/a0ef0f53-ee6a-4ddc-86c0-5e4d15c917c9
 Pictures from <a href="https://unsplash.com/ja/@jeremythomasphoto?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Jeremy Thomas</a> on <a href="https://unsplash.com/ja/%E5%86%99%E7%9C%9F/%E9%9D%92%E3%81%A8%E7%B4%AB%E3%81%AE%E9%8A%80%E6%B2%B3%E3%83%87%E3%82%B8%E3%82%BF%E3%83%AB%E5%A3%81%E7%B4%99-E0AHdsENmDg?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a> 
 
 
-
 ## Features
 
-- Preview image/video as jpg
-- Cache preview files (much faster)
-- Generate preview files asyncronously for current dir
-- Graphic protocol command is modifiable
+- Preview images/videos (as jpg images)
+- Cache preview files (much faster than direct preview)
+- Async generating for current dir
+- Modifiable graphic protocol commands
+- Correct the %px %py position in nvim plugins
 - Logging for debug
 
 
@@ -36,11 +36,6 @@ Ensured to work with:
 - Windows
    - Not tested
 
-> [!Warning]
-> Not tested in ohter OS or terminal apps.
-
-
-
 
 ## Graphic protocols
 
@@ -58,10 +53,9 @@ Not tested:
 ## Structure
 
 ```txt
-├── README.md      : this file  
-├── config         : config file  
-├── config.default : default config file  
-└── preview        : script  
+├── README.md                : this file  
+├── preview.conf.default.vim : default config file  
+└── preview                  : script
 ```
 
 ## Command usage
@@ -77,9 +71,8 @@ ARGS:
    ph        : panel height
    px        : panel x
    py        : panel y
-   patterns  : file patterns (delimiter = ',')
 
-SAMPLE CODE:
+EXAMPLE CODE:
    Generate a preview file for a image:
       preview image %c %pw %ph %px %py
 
@@ -95,7 +88,7 @@ SAMPLE CODE:
    Delete all preview files:
       preview delete
 
-   Generate previews for images/videos in a directory (== Legacy ==):
+   (Legacy) Generate previews for images/videos in a directory:
       preview dir /path/to/dir
 
 
@@ -114,11 +107,11 @@ mkdir scripts
 cd scripts
 git clone https://github.com/riodelphino/preview.vifm
 
-# vifm doesn't read the sub-dir in scripts folder as the document says. So link it.
+# Link the command (vifm doesn't read the sub-dir in scripts folder as the document says.)
 ln -s preview.vifm/preview preview
 
 # Copy the config
-cp preview.vifm/preview.conf ../preview.conf
+cp preview.vifm/preview.conf.default.vim ../preview.conf.vim
 ```
 
 ## Setup
@@ -126,7 +119,7 @@ cp preview.vifm/preview.conf ../preview.conf
 Follow these 3 or 4 steps.  
 
 1. `.zshrc` or `.bashrc`
-2. `config` in preview.vifm
+2. `preview.conf.vim`
 3. `vifmrc`
 4. `init.lua` in nvim (Optional)
 
@@ -152,53 +145,43 @@ Ensure to execute `source ~/.zshrc` or `source ~/.bashrc` in terminal.
 > If you use `vifm` directly , the `TERM` environmental variable has to be set. (e.g. `export TERM=xterm-256color`)
 > Otherwise, the preview shows error, because the `tty` command returns `` empty string.
 
-### 2. Config in preview.vifm
+### 2. preview.conf.vim
 
-Default settings are stored in `config.default`.  
-Copy it & rename to `config`, then modify it.
+Default settings are stored in `preview.conf.default.vim`.  
+Copy it to `~/.config/vifm/preview.conf.vim` as user config. Then modify it.
 
-If `config` not exists, plugin uses `config.default`.
-
-config.default:
-```bash
-#!/bin/bash
-
-# Cache
-if [ -n "$XDG_CACHE_HOME" ]; then
-   CACHE_DIR="$XDG_CACHE_HOME/vifm/preview"
+preview.conf.default.vim:
+```vim
+" Cache
+if $XDG_CACHE_HOME != ''
+   let $CACHE_DIR = $XDG_CACHE_HOME . '/vifm/preview'
 else
-   CACHE_DIR="$HOME/.cache/vifm/preview"
-fi
+   let $CACHE_DIR = $HOME . '/.cache/vifm/preview'
+endif
 
-# Log
-LOG_ENABLED=1             # {0=true|1=false} : Enable/Disable logging
-LOG_PATH="$CACHE_DIR/log" # {path}           : Log filename
+" Log
+let $LOG_ENABLED = 1                " {0=true|1=false} : Enable/Disable logging
+let $LOG_PATH = $CACHE_DIR . '/log' " {path}           : Log filename
 
-# Preview command
-SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
-CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
+" Preview commands
+let $SHOW_CMD_TEMPLATE = 'kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
+let $CLEAR_CMD_TEMPLATE = 'kitten icat --clear --silent %N >%tty <%tty &'
 
-# Images
-IMAGE_QUALITY=80                # {quality}        : Thumbnail quality
-IMAGE_SIZE="600x600"            # {width}x{height} : Thumbnail size
-IMAGE_COLORSPACE_CMYK_TO_SRGB=0 # {0=true|1=false} : Convert 'CMYK' to 'sRGB' or not
-# Image files filter
-IMAGE_PATTERNS="*.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm,*.avif,*.webp,*.heic"
+" Images
+let $IMAGE_QUALITY = 80                " {quality}        : Thumbnail quality
+let $IMAGE_SIZE = '600x600'            " {width}x{height} : Thumbnail size
+let $IMAGE_COLORSPACE_CMYK_TO_SRGB = 0 " {0=true|1=false} : Convert 'CMYK' to 'sRGB' or not
+" Image files filter
+let $IMAGE_PATTERNS = '*.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm,*.avif,*.webp,*.heic'
 
-# Videos
-VIDEO_QUALITY=80   # {quolity}    : Thumbnail quality
-VIDEO_SEEK_TIME=10 # {percentage} : Seek time (%) of the total video duration
-VIDEO_SIZE=640     # {size}       : Thumbnail size. cropped to fit within {size}x{size}
-# Video files filter
-VIDEO_PATTERNS="*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],*.qt,*.divx,*.as[fx]"
-
+" Videos
+let $VIDEO_QUALITY = 80   " {quolity}    : Thumbnail quality
+let $VIDEO_SEEK_TIME = 10 " {percentage} : Seek time (%) of the total video duration
+let $VIDEO_SIZE = 640     " {size}       : Thumbnail size. cropped to fit within {size}x{size}
+" Video files filter
+let $VIDEO_PATTERNS = '*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],*.qt,*.divx,*.as[fx]'
 ```
-
 The placeholders `%pw`, `%ph`, `%px`, `%py`, `%file`, and `%tty` will be replaced with their actual values in preview command.
-
-For faster previw (but increases cache file size instead):
-1. Set measured exact size for your vifm window in bare terminal. (e.g `IMAGE_SIZE="1376x1617"`)
-2. Then remove `--scale-up` option from `SHOW_CMD_TEMPLATE`.  
 
 
 #### Preview commands for graphic protocols
@@ -227,6 +210,11 @@ NEED YOUR PR!!
 Add this code to `~/.config/vifm/vifmrc`
 
 ```vim
+" Load config
+source $VIFM/preview.conf.vim
+" or set full path
+" source ~/.config/vifm/preview.conf.vim
+
 " For images
 fileviewer {*.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm,*.avif,*.webp,*.heic},<image/*>
    \ preview image %c %pw %ph %px %py
@@ -246,7 +234,7 @@ fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[ic
 " To get faster previewing, add this line
 set previewoptions+=graphicsdelay:0
 
-" Keybind for preview.vifm
+" Keybinds
 nnoremap pr :!preview refresh %d<cr>:echo "Refreshed preview caches for" expand('%"d')<cr>
 nnoremap pd :!preview delete<cr>:echo "Deleted all preview caches."<cr>
 ```
@@ -306,12 +294,22 @@ This saves x,y,w,h,boder_width values to environmental variables, and `preview` 
 
 (The w,h are for future expansion.)
 
+## Tips
+
+### Faster preview
+
+1. Set measured exact size for your vifm window in bare terminal. (e.g `IMAGE_SIZE="1376x1617"`)
+2. Then remove `--scale-up` option from `SHOW_CMD_TEMPLATE`.  
+
+> [!Warning]
+> This increases cache file size instead.
+> And requires no-changing layout. (e.g. Measured in 2 panes, then change to 3 panes, or +/- pane size. It makes this tips meaningless.)
 
 
 ## Known Issues
 
 - [ ] 'clear' not works in `vifm on nvim on tmux`. It causes overlaping images.
-- [ ] If `notify.nvim` is shown, the preview position x,y are disturbed.
+- [ ] If `notify.nvim` is shown in nvim, the vifm preview images are disturbed.
 - [ ] The images are shown disturbed & overlapped in `tmux + nvim + vifm(with plugin)`, Because of not working `clear` command.
 
 
@@ -342,5 +340,5 @@ And `set signcolumn=auto` is recommended in nvim's `init.lua`.
 - [ ] Supports gif images?
 - [ ] Supports other terminal apps
 - [ ] Supports other terminal graphics tools
-- [ ] install/uninstall by MakeFile like [https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile](https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile)
+- [ ] install/uninstall by MakeFile? (like [https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile](https://github.com/eylles/vifm-sixel-preview/blob/master/Makefile))
 
