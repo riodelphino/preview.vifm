@@ -106,10 +106,18 @@ DEPENDENCIES:
 
 ## Install
 
+If your vifm config dir is `~/.config/vifm`:
 ```bash
-cd ~/.config/vifm/scripts
-git clone https://github.com/riodelphino/preview.vifm/
-ln -s preview.vifm/preview preview # vifm do not read scripts's sub dir somewhy, so link it.
+cd ~/.config/vifm
+mkdir scripts
+cd scripts
+git clone https://github.com/riodelphino/preview.vifm
+
+# vifm doesn't read the sub-dir in scripts folder as the document says. So link it.
+ln -s preview.vifm/preview preview
+
+# Copy the config
+cp preview.vifm/preview.conf ../preview.conf
 ```
 
 ## Setup
