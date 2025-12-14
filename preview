@@ -16,24 +16,6 @@ Log() {
    fi
 }
 
-LoadConfig() {
-   default_conf="$VIFM/scripts/$SCRIPT_NAME/preview.conf"
-   user_conf="$VIFM/preview.conf"
-   # echo "default_conf=$default_conf" >>~/.cache/vifm/preview/test
-   # echo "user_conf   =$user_conf" >>~/.cache/vifm/preview/test
-   if [ -f "$user_conf" ]; then
-      source "$user_conf"
-      # echo "user_conf is loaded" >>~/.cache/vifm/preview/test
-      return 0
-   elif [ -f "$default_conf" ]; then
-      source "$default_conf"
-      # echo "default_conf is loaded" >>~/.cache/vifm/preview/test
-      return 0
-   fi
-   echo "[ERROR]: Cannot find 'preview.conf'."
-   return 1
-}
-
 GetHash() {
    local path="$1"
    local hash=$(realpath "$path" | sha256sum | cut -d' ' -f1)
@@ -313,11 +295,6 @@ if IsContained "$ENV" "nvim"; then
    IS_NVIM=0
 else
    IS_NVIM=1
-fi
-
-# Load config
-if ! LoadConfig; then
-   exit
 fi
 
 # Execute Main()
