@@ -80,23 +80,24 @@ ARGS:
    patterns  : file patterns (delimiter = ',')
 
 SAMPLE CODE:
-   Clear the preview in screen:
-      preview clear
-
-   Generate previews for images/videos in a directory (== Legacy ==):
-      preview dir /path/to/dir
-
    Generate a preview file for a image:
       preview image %c %pw %ph %px %py
 
    Generate a preview file for a video:
       preview video %c %pw %ph %px %py
 
+   Clear the preview in screen:
+      preview clear
+
    Refresh preview files for current dir:
       preview refresh %d
 
    Delete all preview files:
       preview delete
+
+   Generate previews for images/videos in a directory (== Legacy ==):
+      preview dir /path/to/dir
+
 
 DEPENDENCIES:
    - imagemagick
@@ -170,24 +171,27 @@ else
 fi
 
 # Log
-LOG_ENABLED=false         # {true|false} : Enable logging
-LOG_PATH="$CACHE_DIR/log" # {path}       : Log filename
+LOG_ENABLED=1             # {0=true|1=false} : Enable/Disable logging
+LOG_PATH="$CACHE_DIR/log" # {path}           : Log filename
 
 # Preview command
 SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
 CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
 
 # Images
-IMAGE_QUALITY=80                   # {quality}        : Thumbnail quality
-IMAGE_SIZE="600x600"               # {width}x{height} : Thumbnail size
-IMAGE_COLORSPACE_CMYK_TO_SRGB=true # {bool}           : Convert 'CMYK' to 'sRGB'
-IMAGE_PATTERNS="*.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm,*.avif,*.webp,*.heic" # image patterns
+IMAGE_QUALITY=80                # {quality}        : Thumbnail quality
+IMAGE_SIZE="600x600"            # {width}x{height} : Thumbnail size
+IMAGE_COLORSPACE_CMYK_TO_SRGB=0 # {0=true|1=false} : Convert 'CMYK' to 'sRGB' or not
+# Image files filter
+IMAGE_PATTERNS="*.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm,*.avif,*.webp,*.heic"
 
 # Videos
 VIDEO_QUALITY=80   # {quolity}    : Thumbnail quality
 VIDEO_SEEK_TIME=10 # {percentage} : Seek time (%) of the total video duration
 VIDEO_SIZE=640     # {size}       : Thumbnail size. cropped to fit within {size}x{size}
-VIDEO_PATTERNS="*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],*.qt,*.divx,*.as[fx]" # video patterns
+# Video files filter
+VIDEO_PATTERNS="*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],*.qt,*.divx,*.as[fx]"
+
 ```
 
 The placeholders `%pw`, `%ph`, `%px`, `%py`, `%file`, and `%tty` will be replaced with their actual values in preview command.

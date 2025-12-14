@@ -8,12 +8,11 @@ SCRIPT_NAME='preview.vifm'
 
 # Loging
 Log() {
-   local category="$1"
-   local label="$2"
+   local subcmd=$1
+   local category="$2"
    local value="$3"
-   local length=20
    if [[ $LOG_ENABLED -eq 0 ]]; then
-      printf "[ %-${length}s ] %-${length}s: %s\n" "$category" "$label" "$value" >>"$LOG_PATH"
+      printf "[ %-5s ] %-22s: %s\n" "$subcmd" "$category" "$value" >>"$LOG_PATH"
    fi
 }
 
@@ -123,7 +122,7 @@ GeneratePreview() {
    local path="$2"
    local force=$3
 
-   Log "generate.start" "$action" "file='$path'"
+   Log "$action" "generate.start" "file='$path'"
 
    # Get preview filename (hash)
    local hash=$(GetHash "$path")
@@ -144,12 +143,12 @@ GeneratePreview() {
          # ffmpeg -y -i "$file" -vf "select='eq(n,$VIDEO_FRAME)',scale=$VIDEO_SIZE" -frames:v 1 "$preview_path" &>/dev/null # '&' at last works async ?
          ffmpegthumbnailer -s $VIDEO_SIZE -q $VIDEO_QUALITY -t $VIDEO_SEEK_TIME -i "$path" -o "$preview_path" &>/dev/null # '&' at last works async ?
       else
-         Log "generate.error" "'$action' is not a valid action."
+         Log "$action" "generate.error" "'$action' is not a valid action."
       fi
    fi
 
-   Log "generate.path" "$action" "path='$path'"
-   Log "generate.end" "$action" "processed '$path'"
+   Log "$action" "generate.path" "path='$path'"
+   Log "$action" "generate.end" "processed '$path'"
    echo $preview_path
 }
 
@@ -162,14 +161,14 @@ GeneratePreviewAll() {
 
    local cnt=0
 
-   Log "generate_all.start" "$action" "dir='$dir'"
+   Log "$action" "generate_all.start" "dir='$dir'"
 
    local status=$(GetStatus "$dir" "$action")
    if [[ $status == "done" && "$force" != "force" ]]; then
-      Log "generate_all.status" "$action" "Skip generating all in '$dir' (already generated)"
+      Log "$action" "generate_all.status" "Skip generating all in '$dir' (already generated)"
       return 1
    elif [[ $status == "locked" ]]; then
-      Log "generate_all.status" "$action" "Skip generating all in '$dir' (generating now)"
+      Log "$action" "generate_all.status" "Skip generating all in '$dir' (generating now)"
       return 1
    fi
 
@@ -179,12 +178,12 @@ GeneratePreviewAll() {
    IFS=',' read -r -a pat_array <<<"$patterns"
    local jobs=()
    for pat in "${pat_array[@]}"; do
-      Log "generate_all.pattern" "$action" "pat='$pat'"
+      Log "$action" "generate_all.pattern" "pat='$pat'"
       # For each pattern, find matching files
       for file in "$dir"/$pat; do
          # Only proceed if $file is a regular file
          if [[ -f "$file" ]]; then
-            Log "generate_all.file" "$action" "file='$file'"
+            Log "$action" "generate_all.file" "file='$file'"
             GeneratePreview $action "$file" $force &
             ((cnt++))
          fi
@@ -194,15 +193,14 @@ GeneratePreviewAll() {
    wait
 
    SetStatus "$dir" "$action" "done"
-   Log "generate_all.end" "$action" "processed $cnt files in '$dir'"
+   Log "$action" "generate_all.end" "processed $cnt files in '$dir'"
 }
 
 # Replace % placeholders to actual values
 GetCmd() {
    local cmd="$1"
    local preview_path="$2"
-   Log "get_cmd.start" "" ""
-   Log "get_cmd.path" "" "preview_path='$preview_path'"
+   Log "$action" "get_cmd.path" "preview_path='$preview_path'"
 
    # Replace
    cmd="${cmd//%pw/$PW}"
@@ -214,22 +212,22 @@ GetCmd() {
       cmd="${cmd//%file/$preview_path}"
    fi
 
-   Log "get_cmd.cmd" "" "$cmd"
+   Log "$action" "get_cmd.cmd" "$cmd"
    echo "$cmd"
 }
 
 # Clear
 Clear() {
-   Log "clear.start" "" ""
+   Log "$SUBCMD" "clear.start" ""
    local cmd_clear=$(GetCmd "$CLEAR_CMD_TEMPLATE" "")
    sh -c "$cmd_clear"
-   Log "clear.end" "" ""
+   Log "$SUBCMD" "clear.end" ""
 }
 
 # Show preview
 Show() {
    local path="$1"
-   Log "show.start" "" ""
+   Log "$SUBCMD" "show.start" "$path"
    # Adjust x,y on nvim
    if [[ $IS_NVIM ]]; then
       PX=$((PX + VIFM_PREVIEW_WIN_X + VIFM_PREVIEW_WIN_BORDER_WIDTH))
@@ -237,7 +235,7 @@ Show() {
    fi
    local cmd_show=$(GetCmd "$SHOW_CMD_TEMPLATE" "$path")
    sh -c "$cmd_show"
-   Log "show.end" "" "$path"
+   Log "$SUBCMD" "show.end" "$path"
 }
 
 # --------------------------------------------------------------------------------
@@ -246,17 +244,17 @@ Show() {
 Main() {
    # Logging
    Log "" "" ""
-   Log "main.start" "$SUBCMD" "----------------------------------------------------------"
-   Log "ctx" "$SUBCMD" "subcmd=$SUBCMD"
-   Log "ctx" "$SUBCMD" "target_path=$TARGET_PATH"
-   Log "ctx" "$SUBCMD" "size=$PW x $PH"
-   Log "ctx" "$SUBCMD" "pos=$PX x $PY"
-   Log "ctx" "$SUBCMD" "CMD_SHOW_TEMPLATE='$SHOW_CMD_TEMPLATE'"
-   Log "ctx" "$SUBCMD" "CMD_CLEAR_TEMPLATE='$CLEAR_CMD_TEMPLATE'"
-   Log "ctx" "$SUBCMD" "CMD_CLEAR_TEMPLATE='$CLEAR_CMD_TEMPLATE'"
-   Log "ctx" "$SUBCMD" "VIFM_PREVIEW_WIN_X=$VIFM_PREVIEW_WIN_X"
-   Log "ctx" "$SUBCMD" "VIFM_PREVIEW_WIN_Y=$VIFM_PREVIEW_WIN_Y"
-   Log "ctx" "$SUBCMD" "VIFM_PREVIEW_WIN_BORDER_WIDTH=$VIFM_PREVIEW_WIN_BORDER_WIDTH"
+   Log "$SUBCMD" "main.start" "----------------------------------------------------------"
+   Log "$SUBCMD" "ctx" "subcmd=$SUBCMD"
+   Log "$SUBCMD" "ctx" "target_path=$TARGET_PATH"
+   Log "$SUBCMD" "ctx" "size=$PW x $PH"
+   Log "$SUBCMD" "ctx" "pos=$PX x $PY"
+   Log "$SUBCMD" "ctx" "CMD_SHOW_TEMPLATE='$SHOW_CMD_TEMPLATE'"
+   Log "$SUBCMD" "ctx" "CMD_CLEAR_TEMPLATE='$CLEAR_CMD_TEMPLATE'"
+   Log "$SUBCMD" "ctx" "CMD_CLEAR_TEMPLATE='$CLEAR_CMD_TEMPLATE'"
+   Log "$SUBCMD" "ctx" "VIFM_PREVIEW_WIN_X=$VIFM_PREVIEW_WIN_X"
+   Log "$SUBCMD" "ctx" "VIFM_PREVIEW_WIN_Y=$VIFM_PREVIEW_WIN_Y"
+   Log "$SUBCMD" "ctx" "VIFM_PREVIEW_WIN_BORDER_WIDTH=$VIFM_PREVIEW_WIN_BORDER_WIDTH"
 
    # Create cache directory
    mkdir -p "$CACHE_DIR"
