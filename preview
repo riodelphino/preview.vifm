@@ -123,7 +123,7 @@ GeneratePreview() {
    local path="$2"
    local force=$3
 
-   Log "preview.start" "$action" "file='$path'"
+   Log "generate.start" "$action" "file='$path'"
 
    # Get preview filename (hash)
    local hash=$(GetHash "$path")
@@ -144,12 +144,12 @@ GeneratePreview() {
          # ffmpeg -y -i "$file" -vf "select='eq(n,$VIDEO_FRAME)',scale=$VIDEO_SIZE" -frames:v 1 "$preview_path" &>/dev/null # '&' at last works async ?
          ffmpegthumbnailer -s $VIDEO_SIZE -q $VIDEO_QUALITY -t $VIDEO_SEEK_TIME -i "$path" -o "$preview_path" &>/dev/null # '&' at last works async ?
       else
-         Log "preview.error" "'$action' is not a valid action."
+         Log "generate.error" "'$action' is not a valid action."
       fi
    fi
 
-   Log "preview.path" "$action" "path='$path'"
-   Log "preview.end" "$action" "processed '$path'"
+   Log "generate.path" "$action" "path='$path'"
+   Log "generate.end" "$action" "processed '$path'"
    echo $preview_path
 }
 
@@ -162,14 +162,14 @@ GeneratePreviewAll() {
 
    local cnt=0
 
-   Log "preview_all.start" "$action" "dir='$dir'"
+   Log "generate_all.start" "$action" "dir='$dir'"
 
    local status=$(GetStatus "$dir" "$action")
    if [[ $status == "done" && "$force" != "force" ]]; then
-      Log "preview_all.status" "$action" "Skip generating all in '$dir' (already generated)"
+      Log "generate_all.status" "$action" "Skip generating all in '$dir' (already generated)"
       return 1
    elif [[ $status == "locked" ]]; then
-      Log "preview_all.status" "$action" "Skip generating all in '$dir' (generating now)"
+      Log "generate_all.status" "$action" "Skip generating all in '$dir' (generating now)"
       return 1
    fi
 
@@ -179,25 +179,22 @@ GeneratePreviewAll() {
    IFS=',' read -r -a pat_array <<<"$patterns"
    local jobs=()
    for pat in "${pat_array[@]}"; do
-      Log "preview_all.pattern" "$action" "pat='$pat'"
+      Log "generate_all.pattern" "$action" "pat='$pat'"
       # For each pattern, find matching files
       for file in "$dir"/$pat; do
          # Only proceed if $file is a regular file
          if [[ -f "$file" ]]; then
-            Log "preview_all.file" "$action" "file='$file'"
-            # local preview_path=$(GeneratePreview $action "$file" &)
+            Log "generate_all.file" "$action" "file='$file'"
             GeneratePreview $action "$file" $force &
-            # jobs+=($!) # TODO: REMOVE
             ((cnt++))
          fi
       done
    done
 
-   # wait "${jobs[@]}" # ERROR: "PID * is not a valid child process" # TODO: REMOVE
    wait
 
    SetStatus "$dir" "$action" "done"
-   Log "preview_all.end" "$action" "processed $cnt files in '$dir'"
+   Log "generate_all.end" "$action" "processed $cnt files in '$dir'"
 }
 
 # Replace % placeholders to actual values
