@@ -13,7 +13,7 @@ Log() {
    local value="$3"
    local length=20
    if [[ $LOG_ENABLED == true ]]; then
-      printf "[ %-${length}s ] %-${length}s: %s\n" "$category" "$label" "$value" >>"$log_file"
+      printf "[ %-${length}s ] %-${length}s: %s\n" "$category" "$label" "$value" >>"$LOG_PATH"
    fi
 }
 
@@ -25,7 +25,7 @@ GetHash() {
 
 GetParentDir() {
    local path="$1"
-   local parent=$(dirname "$(realpath "$path")")
+   local parent=$(dirname "$path")
    echo "$parent"
 }
 
@@ -102,36 +102,36 @@ IsContained() {
 # Generate preview & return the hash path
 GeneratePreview() {
    local action=$1
-   local file="$2"
+   local path="$2"
    local force=$3
 
-   Log "preview.start" "$action" "file='$file'"
+   Log "preview.start" "$action" "file='$path'"
 
    # Get preview filename (hash)
-   local hash=$(GetHash "$file")
+   local hash=$(GetHash "$path")
    local preview_path="$CACHE_DIR/$hash.jpg"
 
    # Generate preview
    if [[ ! -f "$preview_path" || "$force" == "force" ]]; then
       if [[ $action == "image" ]]; then
          # magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE $COLOR_SPACE "$preview_path" &>/dev/null # '&' at last works async ?
-         local colorspace=$(magick identify -format "%[colorspace]" "$file" 2>/dev/null)
+         local colorspace=$(magick identify -format "%[colorspace]" "$path" 2>/dev/null)
 
          if [[ $colorspace == "CMYK" && $IMAGE_COLORSPACE_CMYK_TO_SRGB == true ]]; then
-            magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE -colorspace sRGB "$preview_path" &>/dev/null
+            magick "$path" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE -colorspace sRGB "$preview_path" &>/dev/null
          else
-            magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE "$preview_path" &>/dev/null
+            magick "$path" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE "$preview_path" &>/dev/null
          fi
       elif [[ $action == "video" ]]; then
          # ffmpeg -y -i "$file" -vf "select='eq(n,$VIDEO_FRAME)',scale=$VIDEO_SIZE" -frames:v 1 "$preview_path" &>/dev/null # '&' at last works async ?
-         ffmpegthumbnailer -s $VIDEO_SIZE -q $VIDEO_QUALITY -t $VIDEO_SEEK_TIME -i "$file" -o "$preview_path" &>/dev/null # '&' at last works async ?
+         ffmpegthumbnailer -s $VIDEO_SIZE -q $VIDEO_QUALITY -t $VIDEO_SEEK_TIME -i "$path" -o "$preview_path" &>/dev/null # '&' at last works async ?
       else
          Log "preview.error" "'$action' is not a valid action."
       fi
    fi
 
-   Log "preview.path" "$action" "path='$preview_path'"
-   Log "preview.end" "$action" "processed '$file'"
+   Log "preview.path" "$action" "path='$path'"
+   Log "preview.end" "$action" "processed '$path'"
    echo $preview_path
 }
 
@@ -191,10 +191,10 @@ GetCmd() {
    Log "get_cmd.path" "" "preview_path='$preview_path'"
 
    # Replace
-   cmd="${cmd//%pw/$pw}"
-   cmd="${cmd//%ph/$ph}"
-   cmd="${cmd//%px/$px}"
-   cmd="${cmd//%py/$py}"
+   cmd="${cmd//%pw/$PW}"
+   cmd="${cmd//%ph/$PH}"
+   cmd="${cmd//%px/$PX}"
+   cmd="${cmd//%py/$PY}"
    cmd="${cmd//%tty/$VIFM_PREVIEW_TTY}"
    if [[ $preview_path != '' ]]; then
       cmd="${cmd//%file/$preview_path}"
@@ -214,16 +214,16 @@ Clear() {
 
 # Show preview
 Show() {
-   local preview_path="$1"
+   local path="$1"
    Log "show.start" "" ""
    # Adjust x,y on nvim
-   if [[ $nvim ]]; then
-      px=$((px + VIFM_PREVIEW_WIN_X + VIFM_PREVIEW_WIN_BORDER_WIDTH))
-      py=$((py + VIFM_PREVIEW_WIN_Y + VIFM_PREVIEW_WIN_BORDER_WIDTH))
+   if [[ $IS_NVIM ]]; then
+      PX=$((PX + VIFM_PREVIEW_WIN_X + VIFM_PREVIEW_WIN_BORDER_WIDTH))
+      PY=$((PY + VIFM_PREVIEW_WIN_Y + VIFM_PREVIEW_WIN_BORDER_WIDTH))
    fi
-   local cmd_show=$(GetCmd "$SHOW_CMD_TEMPLATE" "$preview_path")
+   local cmd_show=$(GetCmd "$SHOW_CMD_TEMPLATE" "$path")
    sh -c "$cmd_show"
-   Log "show.end" "" "$preview_path"
+   Log "show.end" "" "$path"
 }
 
 # --------------------------------------------------------------------------------
@@ -232,11 +232,11 @@ Show() {
 Main() {
    # Logging
    Log "" "" ""
-   Log "main.start" "$subcmd" "----------------------------------------------------------"
-   Log "ctx" "subcmd" "$subcmd"
-   Log "ctx" "path" "$path"
-   Log "ctx" "size" "$pw x $ph"
-   Log "ctx" "pos" "$px x $py"
+   Log "main.start" "$SUBCMD" "----------------------------------------------------------"
+   Log "ctx" "subcmd" "$SUBCMD"
+   Log "ctx" "path" "$TARGET_PATH"
+   Log "ctx" "size" "$PW x $PH"
+   Log "ctx" "pos" "$PX x $PY"
    Log "ctx" "cur_dir" "$cur_dir"
    Log "ctx" "cmd_show_template" "$SHOW_CMD_TEMPLATE"
    Log "ctx" "cmd_clear_template" "$CLEAR_CMD_TEMPLATE"
@@ -245,29 +245,29 @@ Main() {
    mkdir -p "$CACHE_DIR"
 
    # Execute actions
-   if [[ $subcmd == "clear" ]]; then
+   if [[ $SUBCMD == "clear" ]]; then
       # clear
       Clear
-   elif [[ $subcmd == "dir" ]]; then
+   elif [[ $SUBCMD == "dir" ]]; then
       # == Legacy == Generate preview files for all images|videos in dir in background
-      GeneratePreviewAll image "$path" $IMAGE_PATTERNS >/dev/null 2>&1 &
-      GeneratePreviewAll video "$path" $VIDEO_PATTERNS >/dev/null 2>&1 &
-   elif [[ $subcmd == "image" ]]; then
+      GeneratePreviewAll image "$TARGET_PATH" $IMAGE_PATTERNS >/dev/null 2>&1 &
+      GeneratePreviewAll video "$TARGET_PATH" $VIDEO_PATTERNS >/dev/null 2>&1 &
+   elif [[ $SUBCMD == "image" ]]; then
       # Generate preview files for all images in parent dir in background
-      GeneratePreviewAll $subcmd "$parent" $IMAGE_PATTERNS >/dev/null 2>&1 &
+      GeneratePreviewAll $SUBCMD "$PARENT" $IMAGE_PATTERNS >/dev/null 2>&1 &
       # Preview a image
-      local preview_path=$(GeneratePreview $subcmd "$path" $IMAGE_PATTERNS)
+      local preview_path=$(GeneratePreview $SUBCMD "$TARGET_PATH" $IMAGE_PATTERNS)
       Show "$preview_path"
-   elif [[ $subcmd == "video" ]]; then
+   elif [[ $SUBCMD == "video" ]]; then
       # Generate preview files for all videos in parent dir in background
-      GeneratePreviewAll $subcmd "$parent" $VIDEO_PATTERNS >/dev/null 2>&1 &
+      GeneratePreviewAll $SUBCMD "$PARENT" $VIDEO_PATTERNS >/dev/null 2>&1 &
       # Preview a video
-      local preview_path=$(GeneratePreview $subcmd "$path" $VIDEO_PATTERNS)
+      local preview_path=$(GeneratePreview $SUBCMD "$TARGET_PATH" $VIDEO_PATTERNS)
       Show "$preview_path"
-   elif [[ $subcmd == "refresh" ]]; then
-      GeneratePreviewAll image "$path" $IMAGE_PATTERNS "force" >/dev/null 2>&1 &
-      GeneratePreviewAll video "$path" $VIDEO_PATTERNS "force" >/dev/null 2>&1 &
-   elif [[ $subcmd == "delete" ]]; then
+   elif [[ $SUBCMD == "refresh" ]]; then
+      GeneratePreviewAll image "$TARGET_PATH" $IMAGE_PATTERNS "force" >/dev/null 2>&1 &
+      GeneratePreviewAll video "$TARGET_PATH" $VIDEO_PATTERNS "force" >/dev/null 2>&1 &
+   elif [[ $SUBCMD == "delete" ]]; then
       rm -f "$CACHE_DIR"/*
    fi
 }
@@ -290,27 +290,24 @@ fi
 # --------------------------------------------------------------------------------
 
 # Get args
-subcmd=$1
-path=$2
-pw=$3
-ph=$4
-px=$5
-py=$6
+SUBCMD=$1
+TARGET_PATH=$2
+PW=$3
+PH=$4
+PX=$5
+PY=$6
 
-# Adjust args
-path="${path//\\ / }" # replate '\ ' to ' '
+# Adjust target path
+TARGET_PATH="${TARGET_PATH//\\ / }" # replate '\ ' to ' '
 
-# Path for log
-log_file="$CACHE_DIR/log"
-
-# Previous/current directories
-parent=$(GetParentDir "$path")
+# Parent dir
+PARENT=$(GetParentDir "$TARGET_PATH")
 
 # Environment (e.g. "nvim tmux" | "nvim" | "terminal" )
-env=$(GetEnvironment)
+ENV=$(GetEnvironment)
 
 # On nvim or not
-nvim=$(IsContained "$env" "nvim")
+IS_NVIM=$(IsContained "$ENV" "nvim")
 
 # Execute Main()
 Main

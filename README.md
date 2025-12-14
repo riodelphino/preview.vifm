@@ -114,19 +114,19 @@ ln -s preview.vifm/preview preview # vifm do not read scripts's sub dir somewhy,
 
 ## Setup
 
-Follow these 4 steps.  
+Follow these 3 or 4 steps.  
 
 1. `.zshrc` or `.bashrc`
 2. `config` in preview.vifm
 3. `vifmrc`
-4. `init.lua` in nvim
+4. `init.lua` in nvim (Optional)
 
 (It would be nice if the steps could be reduced.)
 
 
 ### 1 .zshrc or .bashrc
 
-Add this code to `~/.zshrc` or `~/.bashrc`
+Add these code to `~/.zshrc` or `~/.bashrc`
 
 ```bash
 export VIFM_PREVIEW_TTY="$(tty)"      # Records `tty` on terminal init (e.g. like `/dev/tts001`)
@@ -154,15 +154,16 @@ config.default:
 ```bash
 #!/bin/bash
 
-# Log
-LOG_ENABLED=false # `true` cause a slight performance overhead
-
 # Cache
 if [ -n "$XDG_CACHE_HOME" ]; then
    CACHE_DIR="$XDG_CACHE_HOME/vifm/preview"
 else
    CACHE_DIR="$HOME/.cache/vifm/preview"
 fi
+
+# Log
+LOG_ENABLED=false         # {true|false} : Enable logging
+LOG_PATH="$CACHE_DIR/log" # {path}       : Log filename
 
 # Preview command
 SHOW_CMD_TEMPLATE='kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py --scale-up --transfer-mode=file "%file" >%tty <%tty'
@@ -198,8 +199,8 @@ CLEAR_CMD_TEMPLATE='kitten icat --clear --silent %N >%tty <%tty &'
 ```
 
 ##### timg
-NOT WORKS YET. Colors & text block images are disturbed.  
-`timg` may not be supported. Need your inspection and PR.
+Currently `timg` is not supported. Colors & text block images are disturbed somehow.  
+Need your inspection and PR.
 ```bash
 # --- timg
 SHOW_CMD_TEMPLATE='timg -p sixel -g %pwx%ph "%file"'
@@ -208,7 +209,6 @@ CLEAR_CMD_TEMPLATE='timg -clear'
 
 ##### Others
 NEED YOUR PR!!
-
 
 ### 3. vifmrc
 
@@ -235,15 +235,15 @@ fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[ic
 set previewoptions+=graphicsdelay:0
 
 " Keybind for preview.vifm
-nnoremap pr :!preview refresh %d<cr>
-nnoremap pd :!preview delete<cr>
+nnoremap pr :!preview refresh %d<cr>:echo "Refreshed preview caches for" expand('%"d')<cr>
+nnoremap pd :!preview delete<cr>:echo "Deleted all preview caches."<cr>
 ```
 
 > [!Note]
 > `%pc` is just a delimiter, between displaying command and cleaning command.
 
 
-### 4. init.lua in nvim
+### 4. (Optional) init.lua in nvim
 
 If you use vifm on nvim, set this code to `init.lua`.  
 With `lazy.nvim`, you can set it to `config = funciton() ... end` section on the settings for [vifm.vim](https://github.com/vifm/vifm.vim) / [fm-nvim](https://github.com/is0n/fm-nvim)
@@ -319,7 +319,7 @@ Though that sample code is on kitty official site.
 
 ### Shown in out of place
 
-Almost **resolved** by [#4-initlua-in-nvim](#4-initlua-in-nvim).  
+Almost **resolved** by [#4-optional-initlua-in-nvim](#4-optional-initlua-in-nvim).  
 
 Floating x,y positions or border size are the cause.  
 And `set signcolumn=auto` is recommended in nvim's `init.lua`.
