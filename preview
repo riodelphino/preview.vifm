@@ -13,29 +13,37 @@ Log() {
    local value="$3"
    local subcmd_len=8
    local category_len=15
-   if [[ $LOG_ENABLED -eq 0 ]]; then
+   if [[ $LOG_ENABLED == true ]]; then
       printf "[ %-${subcmd_len}s ] %-${category_len}s: %s\n" "$subcmd" "$category" "$value" >>"$LOG_PATH"
    fi
 }
 
+# Get hash from string
 GetHash() {
-   local path="$1"
-   local hash=$(realpath "$path" | sha256sum | cut -d' ' -f1)
+   local str="$1"
+   local hash=$(realpath "$str" | sha256sum | cut -d' ' -f1)
    echo "$hash"
 }
 
+# Get parent dir
 GetParentDir() {
    local path="$1"
    local parent=$(dirname "$path")
    echo "$parent"
 }
 
+# Get Modified TimeStamp
 GetMtime() {
    local path="$1"
-   local timestamp=$(date -r "$path" +"%s")
-   echo $timestamp
+   if [[ -f "$path" ]]; then
+      local timestamp=$(date -r "$path" +"%s")
+      echo $timestamp
+   else
+      echo ""
+   fi
 }
 
+# Get generation status
 GetStatus() {
    local path="$1"
    local action=$2
@@ -56,6 +64,7 @@ GetStatus() {
    fi
 }
 
+# Set generation status
 SetStatus() {
    local path="$1"
    local action=$2
@@ -85,6 +94,7 @@ SetStatus() {
    fi
 }
 
+# Get environment as string
 GetEnvironment() {
    local env=""
    [ -n "$NVIM" ] && env="$env nvim"
@@ -93,6 +103,7 @@ GetEnvironment() {
    echo "${env# }" # (e.g. "nvim tmux")
 }
 
+# Check whether the source contains target
 IsContained() {
    local source="$1"
    local target="$2"
@@ -123,24 +134,23 @@ GeneratePreview() {
    local path_mtime=$(GetMtime "$path")
 
    # Conditions
-   local preview_missing=1
-   local preview_older=1
-   local force_update=1
+   local preview_missing=false
+   local preview_older=false
 
-   [[ ! -f "$preview_path" ]] && preview_missing=0
-   [[ "$preview_mtime" -lt "$path_mtime" ]] && preview_older=0
-   [[ "$force" == "force" ]] && force_update=0
+   [[ ! -f "$preview_path" ]] && preview_missing=true
+   ((preview_mtime < path_mtime)) && preview_older=true
 
    # Generate preview
-   if [[ $preview_missing || $preview_older || $force_update ]]; then
-      [[ $preview_missing ]] && Log "$action" "generate" "preview_missing=$preview_older)"
-      [[ $preview_older ]] && Log "$action" "generate" "preview_older=$preview_older)"
-      [[ $preview_older ]] && Log "$action" "generate" "force_update=$force_update)"
+   # if ((preview_missing || preview_older || force)); then
+   if [[ $preview_missing == true || $preview_older == true || $force == true ]]; then
+      [[ $preview_missing == true ]] && Log "$action" "generate" "preview_missing=true"
+      [[ $preview_older == true ]] && Log "$action" "generate" "preview_older=true"
+      [[ $force == true ]] && Log "$action" "generate" "force=true"
       if [[ $action == "image" ]]; then
          # magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE $COLOR_SPACE "$preview_path" &>/dev/null # '&' at last works async ?
          local colorspace=$(magick identify -format "%[colorspace]" "$path" 2>/dev/null)
 
-         if [[ $colorspace == "CMYK" && $IMAGE_COLORSPACE_CMYK_TO_SRGB -eq 0 ]]; then
+         if [[ $colorspace == "CMYK" ]] && [[ $IMAGE_COLORSPACE_CMYK_TO_SRGB == true ]]; then
             magick "$path" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE -colorspace sRGB "$preview_path" &>/dev/null
          else
             magick "$path" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE "$preview_path" &>/dev/null
@@ -164,14 +174,14 @@ GeneratePreviewAll() {
    local action=$1
    local dir="$2"
    local patterns="$3"
-   local force="$4"
+   local force=$4
 
    local cnt=0
 
    Log "$action" "generate_all" "(start) dir='$dir'"
 
    local status=$(GetStatus "$dir" "$action")
-   if [[ $status == "done" && "$force" != "force" ]]; then
+   if [[ $status == "done" && $force != true ]]; then
       Log "$action" "generate_all" "(info) Skipped generating all in '$dir' (already generated)"
       return 1
    elif [[ $status == "locked" ]]; then
@@ -203,9 +213,10 @@ GeneratePreviewAll() {
    done
 
    wait
-
    SetStatus "$dir" "$action" "done"
+
    Log "$action" "generate_all" "(end) processed $cnt files in '$dir'"
+   return 0
 }
 
 # Replace % placeholders to actual values
@@ -260,7 +271,7 @@ Main() {
       Log "$ACTION" "ctx" "PWxPH=$PWx$PH PXxPY=$PXx$PY"
    fi
    Log "$ACTION" "ctx" "ENV='$ENV'"
-   if [[ $IS_NVIM -eq 0 ]]; then
+   if [[ $IS_NVIM == true ]]; then
       Log "$ACTION" "ctx" "VIFM_PREVIEW_WIN X=$VIFM_PREVIEW_WIN_X Y=$VIFM_PREVIEW_WIN_Y BORDER_WIDTH=$VIFM_PREVIEW_WIN_BORDER_WIDTH"
    fi
 
@@ -273,23 +284,23 @@ Main() {
       Clear
    elif [[ $ACTION == "dir" ]]; then
       # (Legacy) Generate preview files for all images|videos in dir in background
-      GeneratePreviewAll image "$TARGET_ABSPATH" $IMAGE_PATTERNS >/dev/null 2>&1 &
-      GeneratePreviewAll video "$TARGET_ABSPATH" $VIDEO_PATTERNS >/dev/null 2>&1 &
+      GeneratePreviewAll image "$TARGET_ABSPATH" $IMAGE_PATTERNS false >/dev/null 2>&1 &
+      GeneratePreviewAll video "$TARGET_ABSPATH" $VIDEO_PATTERNS false >/dev/null 2>&1 &
    elif [[ $ACTION == "image" ]]; then
       # Generate preview files for all images in parent dir in background
-      GeneratePreviewAll $ACTION "$PARENT" $IMAGE_PATTERNS >/dev/null 2>&1 &
+      GeneratePreviewAll $ACTION "$PARENT" $IMAGE_PATTERNS false >/dev/null 2>&1 &
       # Preview a image
-      local preview_path=$(GeneratePreview $ACTION "$TARGET_ABSPATH" $IMAGE_PATTERNS)
+      local preview_path=$(GeneratePreview $ACTION "$TARGET_ABSPATH" $IMAGE_PATTERNS false)
       Show "$preview_path"
    elif [[ $ACTION == "video" ]]; then
       # Generate preview files for all videos in parent dir in background
-      GeneratePreviewAll $ACTION "$PARENT" $VIDEO_PATTERNS >/dev/null 2>&1 &
+      GeneratePreviewAll $ACTION "$PARENT" $VIDEO_PATTERNS false >/dev/null 2>&1 &
       # Preview a video
-      local preview_path=$(GeneratePreview $ACTION "$TARGET_ABSPATH" $VIDEO_PATTERNS)
+      local preview_path=$(GeneratePreview $ACTION "$TARGET_ABSPATH" $VIDEO_PATTERNS false)
       Show "$preview_path"
    elif [[ $ACTION == "refresh" ]]; then
-      GeneratePreviewAll image "$TARGET_ABSPATH" $IMAGE_PATTERNS "force" >/dev/null 2>&1 &
-      GeneratePreviewAll video "$TARGET_ABSPATH" $VIDEO_PATTERNS "force" >/dev/null 2>&1 &
+      GeneratePreviewAll image "$TARGET_ABSPATH" "$IMAGE_PATTERNS" true >/dev/null 2>&1 &
+      GeneratePreviewAll video "$TARGET_ABSPATH" "$VIDEO_PATTERNS" true >/dev/null 2>&1 &
    elif [[ $ACTION == "delete" ]]; then
       rm -f "$CACHE_DIR"/*
    fi
@@ -320,11 +331,7 @@ PARENT=$(GetParentDir "$TARGET_ABSPATH")
 ENV=$(GetEnvironment)
 
 # On nvim or not
-if IsContained "$ENV" "nvim"; then
-   IS_NVIM=0
-else
-   IS_NVIM=1
-fi
+IsContained "$ENV" "nvim" && IS_NVIM=true || IS_NVIM=false
 
 # Execute Main()
 Main

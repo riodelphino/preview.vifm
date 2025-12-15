@@ -6,7 +6,7 @@ else
 endif
 
 " Log
-let $LOG_ENABLED = 1                " {0=true|1=false} : Enable/Disable logging
+let $LOG_ENABLED = 'false'          " {'true'|'false'} : Enable/Disable logging
 let $LOG_PATH = $CACHE_DIR . '/log' " {path}           : Log filename
 
 " Preview commands

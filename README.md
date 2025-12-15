@@ -1,6 +1,6 @@
 # preview.vifm
 
-A previewing script for image/video on vifm.
+A faster previewing script for image/video on vifm.
 
 https://github.com/user-attachments/assets/a0ef0f53-ee6a-4ddc-86c0-5e4d15c917c9
 
@@ -9,17 +9,28 @@ Pictures from <a href="https://unsplash.com/ja/@jeremythomasphoto?utm_content=cr
 
 ## Features
 
+Main features
 - Preview images/videos (as jpg images)
 - Cache preview files (much faster than direct preview)
 - Async generating for current dir
+- Re-generate preview file when the current image/video file is updated
 - Modifiable graphic protocol commands
-- Correct the %px %py position in nvim plugins
+
+Additional
+- (For nvim) Correct the %px %py position in nvim plugins or floating window
 - Logging for debug
 
 
-## Requirements
+## Dependencies
 
-Ensured to work with:
+- [ImageMagick](https://github.com/ImageMagick/ImageMagick)
+- [ffmpegthumbnailer](https://github.com/dirkvdb/ffmpegthumbnailer)
+- Graphic protocol: [kitten icat](https://sw.kovidgoyal.net/kitty/kittens/icat/) (or others)
+
+
+## Supported Environments
+
+Currently ensured to work with:
 - MacOS
    - kitty
       - ✓ vifm directly use (Need to set `TERM` environmental variable)
@@ -39,7 +50,7 @@ Ensured to work with:
 
 ## Graphic protocols
 
-Supported:
+Currently supported:
 - `kitten icat`  
 
 Not tested:
@@ -89,13 +100,7 @@ EXAMPLE CODE:
       preview delete
 
    (Legacy) Generate previews for images/videos in a directory:
-      preview dir /path/to/dir
-
-
-DEPENDENCIES:
-   - imagemagick
-   - ffmpegthumbnailer
-   - kitten icat (or other graphic protocols)
+      preview dir %d
 ```
 
 ## Install
@@ -121,7 +126,7 @@ Follow these 3 or 4 steps.
 1. `.zshrc` or `.bashrc`
 2. `preview.conf.vim`
 3. `vifmrc`
-4. `init.lua` in nvim (Optional)
+4. (Optional) `init.lua` in nvim
 
 (It would be nice if the steps could be reduced.)
 
@@ -212,8 +217,10 @@ Add this code to `~/.config/vifm/vifmrc`
 ```vim
 " Load config
 source $VIFM/preview.conf.vim
-" or set full path
-" source ~/.config/vifm/preview.conf.vim
+" or
+" Load config with defaults
+" source $VIFM/scripts/preview.vifm/preview.conf.default.vim " Set defaults
+" source $VIFM/preview.conf.vim " Set only your custom lines
 
 " For images
 fileviewer {*.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm,*.avif,*.webp,*.heic},<image/*>
