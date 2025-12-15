@@ -62,7 +62,7 @@ Not tested:
 
 ```man
 USAGE:
-   preview [action] [file] [pw] [ph] [px] [py] [patterns]
+   preview [action] [file] [pw] [ph] [px] [py]
 
 ARGS:
    action    : clear | dir | image | video ...
