@@ -200,16 +200,16 @@ GetCmd() {
 
 # Clear
 Clear() {
-   Log "$SUBCMD" "clear.start" ""
+   Log "$ACTION" "clear.start" ""
    local cmd_clear=$(GetCmd "$CLEAR_CMD_TEMPLATE" "")
    sh -c "$cmd_clear"
-   Log "$SUBCMD" "clear.end" ""
+   Log "$ACTION" "clear.end" ""
 }
 
 # Show preview
 Show() {
    local path="$1"
-   Log "$SUBCMD" "show.start" "$path"
+   Log "$ACTION" "show.start" "$path"
    # Adjust x,y on nvim
    if [[ $IS_NVIM ]]; then
       PX=$((PX + VIFM_PREVIEW_WIN_X + VIFM_PREVIEW_WIN_BORDER_WIDTH))
@@ -217,7 +217,7 @@ Show() {
    fi
    local cmd_show=$(GetCmd "$SHOW_CMD_TEMPLATE" "$path")
    sh -c "$cmd_show"
-   Log "$SUBCMD" "show.end" "$path"
+   Log "$ACTION" "show.end" "$path"
 }
 
 # --------------------------------------------------------------------------------
@@ -226,45 +226,45 @@ Show() {
 Main() {
    # Logging
    Log "" "" ""
-   Log "$SUBCMD" "main.start" "----------------------------------------------------------"
-   Log "$SUBCMD" "ctx" "subcmd=$SUBCMD"
-   Log "$SUBCMD" "ctx" "target_path=$TARGET_PATH"
-   Log "$SUBCMD" "ctx" "size=$PW x $PH"
-   Log "$SUBCMD" "ctx" "pos=$PX x $PY"
-   Log "$SUBCMD" "ctx" "CMD_SHOW_TEMPLATE='$SHOW_CMD_TEMPLATE'"
-   Log "$SUBCMD" "ctx" "CMD_CLEAR_TEMPLATE='$CLEAR_CMD_TEMPLATE'"
-   Log "$SUBCMD" "ctx" "CMD_CLEAR_TEMPLATE='$CLEAR_CMD_TEMPLATE'"
-   Log "$SUBCMD" "ctx" "VIFM_PREVIEW_WIN_X=$VIFM_PREVIEW_WIN_X"
-   Log "$SUBCMD" "ctx" "VIFM_PREVIEW_WIN_Y=$VIFM_PREVIEW_WIN_Y"
-   Log "$SUBCMD" "ctx" "VIFM_PREVIEW_WIN_BORDER_WIDTH=$VIFM_PREVIEW_WIN_BORDER_WIDTH"
+   Log "$ACTION" "main.start" "----------------------------------------------------------"
+   Log "$ACTION" "ctx" "action=$ACTION"
+   Log "$ACTION" "ctx" "target_path=$TARGET_PATH"
+   Log "$ACTION" "ctx" "size=$PW x $PH"
+   Log "$ACTION" "ctx" "pos=$PX x $PY"
+   Log "$ACTION" "ctx" "CMD_SHOW_TEMPLATE='$SHOW_CMD_TEMPLATE'"
+   Log "$ACTION" "ctx" "CMD_CLEAR_TEMPLATE='$CLEAR_CMD_TEMPLATE'"
+   Log "$ACTION" "ctx" "CMD_CLEAR_TEMPLATE='$CLEAR_CMD_TEMPLATE'"
+   Log "$ACTION" "ctx" "VIFM_PREVIEW_WIN_X=$VIFM_PREVIEW_WIN_X"
+   Log "$ACTION" "ctx" "VIFM_PREVIEW_WIN_Y=$VIFM_PREVIEW_WIN_Y"
+   Log "$ACTION" "ctx" "VIFM_PREVIEW_WIN_BORDER_WIDTH=$VIFM_PREVIEW_WIN_BORDER_WIDTH"
 
    # Create cache directory
    mkdir -p "$CACHE_DIR"
 
    # Execute actions
-   if [[ $SUBCMD == "clear" ]]; then
+   if [[ $ACTION == "clear" ]]; then
       # clear
       Clear
-   elif [[ $SUBCMD == "dir" ]]; then
+   elif [[ $ACTION == "dir" ]]; then
       # == Legacy == Generate preview files for all images|videos in dir in background
       GeneratePreviewAll image "$TARGET_PATH" $IMAGE_PATTERNS >/dev/null 2>&1 &
       GeneratePreviewAll video "$TARGET_PATH" $VIDEO_PATTERNS >/dev/null 2>&1 &
-   elif [[ $SUBCMD == "image" ]]; then
+   elif [[ $ACTION == "image" ]]; then
       # Generate preview files for all images in parent dir in background
-      GeneratePreviewAll $SUBCMD "$PARENT" $IMAGE_PATTERNS >/dev/null 2>&1 &
+      GeneratePreviewAll $ACTION "$PARENT" $IMAGE_PATTERNS >/dev/null 2>&1 &
       # Preview a image
-      local preview_path=$(GeneratePreview $SUBCMD "$TARGET_PATH" $IMAGE_PATTERNS)
+      local preview_path=$(GeneratePreview $ACTION "$TARGET_PATH" $IMAGE_PATTERNS)
       Show "$preview_path"
-   elif [[ $SUBCMD == "video" ]]; then
+   elif [[ $ACTION == "video" ]]; then
       # Generate preview files for all videos in parent dir in background
-      GeneratePreviewAll $SUBCMD "$PARENT" $VIDEO_PATTERNS >/dev/null 2>&1 &
+      GeneratePreviewAll $ACTION "$PARENT" $VIDEO_PATTERNS >/dev/null 2>&1 &
       # Preview a video
-      local preview_path=$(GeneratePreview $SUBCMD "$TARGET_PATH" $VIDEO_PATTERNS)
+      local preview_path=$(GeneratePreview $ACTION "$TARGET_PATH" $VIDEO_PATTERNS)
       Show "$preview_path"
-   elif [[ $SUBCMD == "refresh" ]]; then
+   elif [[ $ACTION == "refresh" ]]; then
       GeneratePreviewAll image "$TARGET_PATH" $IMAGE_PATTERNS "force" >/dev/null 2>&1 &
       GeneratePreviewAll video "$TARGET_PATH" $VIDEO_PATTERNS "force" >/dev/null 2>&1 &
-   elif [[ $SUBCMD == "delete" ]]; then
+   elif [[ $ACTION == "delete" ]]; then
       rm -f "$CACHE_DIR"/*
    fi
 }
@@ -274,7 +274,7 @@ Main() {
 # --------------------------------------------------------------------------------
 
 # Get args
-SUBCMD=$1
+ACTION=$1
 TARGET_PATH=$2
 PW=$3
 PH=$4
