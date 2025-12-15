@@ -337,6 +337,8 @@ And `set signcolumn=auto` is recommended in nvim's `init.lua`.
 
 ## TODO
 
+- [x] Check mtime between `preview` and `images/videos`, then re-generate preview.
+    - [x] Already tried, but canceled. Because it causes much slow down. The code is kept in `feat/compare-mtime` branch.
 - [ ] Supports gif images?
 - [ ] Supports other terminal apps
 - [ ] Supports other terminal graphics tools
