@@ -30,6 +30,12 @@ GetParentDir() {
    echo "$parent"
 }
 
+GetMtime() {
+   local path="$1"
+   local timestamp=$(date -r "$path" +"%s")
+   echo $timestamp
+}
+
 GetStatus() {
    local path="$1"
    local action=$2
@@ -112,8 +118,24 @@ GeneratePreview() {
    local hash=$(GetHash "$path")
    local preview_path="$CACHE_DIR/$hash.jpg"
 
+   # Get timestamp
+   local preview_mtime=$(GetMtime "$preview_path")
+   local path_mtime=$(GetMtime "$path")
+
+   # Conditions
+   local preview_missing=1
+   local preview_older=1
+   local force_update=1
+
+   [[ ! -f "$preview_path" ]] && preview_missing=0
+   [[ "$preview_mtime" -lt "$path_mtime" ]] && preview_older=0
+   [[ "$force" == "force" ]] && force_update=0
+
    # Generate preview
-   if [[ ! -f "$preview_path" || "$force" == "force" ]]; then
+   if [[ $preview_missing || $preview_older || $force_update ]]; then
+      [[ $preview_missing ]] && Log "$action" "generate" "preview_missing=$preview_older)"
+      [[ $preview_older ]] && Log "$action" "generate" "preview_older=$preview_older)"
+      [[ $preview_older ]] && Log "$action" "generate" "force_update=$force_update)"
       if [[ $action == "image" ]]; then
          # magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE $COLOR_SPACE "$preview_path" &>/dev/null # '&' at last works async ?
          local colorspace=$(magick identify -format "%[colorspace]" "$path" 2>/dev/null)
