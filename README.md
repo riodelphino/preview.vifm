@@ -372,6 +372,7 @@ The w,h are for future expansion.
 
 ## Known Issues
 
+- [ ] When previewing image/video, the preview is disturbed on window resize.
 - [ ] 'clear' not works in `vifm on nvim on tmux`. It causes overlaping images.
 - [ ] If `notify.nvim` is shown in nvim, the vifm preview images are disturbed on floating window.
 - [ ] The images are shown disturbed & overlapped in `tmux + nvim + vifm(with plugin)`, Because of not working `clear` command.
@@ -416,7 +417,6 @@ Resolved by [#4-optional-initlua-in-nvim](#4-optional-initlua-in-nvim).
 
 ## TODO
 
-- [ ] Fix: shown in out of place in split window
 - [ ] Supports gif images?
 - [ ] Supports other terminal apps
 - [ ] Supports other terminal graphics tools
