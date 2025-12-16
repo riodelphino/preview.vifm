@@ -284,7 +284,7 @@ return {
     vim.api.nvim_create_autocmd({ 'WinEnter', 'WinResized', 'VimResized' }, {
       pattern = { '*' },
       callback = function(ev)
-        if vim.bo.filetype == 'Fm' and vim.bo.buftype == 'terminal' then -- for fm-nvim
+        function get_envs()
           local win_id = vim.api.nvim_get_current_win()
           local config = vim.api.nvim_win_get_config(win_id)
           local y, x = unpack(vim.fn.win_screenpos(win_id))
@@ -297,13 +297,18 @@ return {
             { 'VIFM_PREVIEW_WIN_H', config.height },
             { 'VIFM_PREVIEW_WIN_BORDER_WIDTH', get_floating_window_border_width(config) },
           }
-          if ev.event == 'WinEnter' then
-            for _, env in ipairs(envs) do
-              local env_name, value = unpack(env)
-              vim.env[env_name] = value
-            end
-          else
+          return envs
+        end
+        if ev.event == 'WinEnter' then
+          local envs = get_envs()
+          for _, env in ipairs(envs) do
+            local env_name, value = unpack(env)
+            vim.env[env_name] = value
+          end
+        else
+          if vim.bo.filetype == 'Fm' and vim.bo.buftype == 'terminal' then -- Filtering for fm-nvim
             local vifm_cmds = {}
+            local envs = get_envs()
             for _, v in ipairs(envs) do
               local env_name, value = unpack(v)
               local cmd
@@ -328,19 +333,22 @@ return {
             -- print(vifm_servername)
             -- print(vifm_cmd_str)
           end
-          -- for checking
-          -- print(vim.inspect({
-          --   x = config.col or x,
-          --   y = config.row or y,
-          --   w = config.width,
-          --   h = config.height,
-          --   split = config.split,
-          --   relative = config.relative,
-          --   bw = get_floating_window_border_width(config),
-          -- }))
         end
+        -- for checking
+        -- print(vim.inspect({
+        --   x = config.col or x,
+        --   y = config.row or y,
+        --   w = config.width,
+        --   h = config.height,
+        --   split = config.split,
+        --   relative = config.relative,
+        --   bw = get_floating_window_border_width(config),
+        -- }))
+        -- end
       end,
     })
+  end,
+}
 ```
 (Need `vifm.vim` example code)
 
