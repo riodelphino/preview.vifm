@@ -252,54 +252,103 @@ nnoremap pd :!preview delete<cr>:echo "Deleted all preview caches."<cr>
 
 ### 4. (Optional) init.lua in nvim
 
-If you use vifm on nvim, set this code to `init.lua`.  
-With `lazy.nvim`, you can set it to `config = funciton() ... end` section on the settings for [vifm.vim](https://github.com/vifm/vifm.vim) / [fm-nvim](https://github.com/is0n/fm-nvim)
+If you use vifm on nvim, follow this step.
 
+With `lazy.nvim`, for `fm-nvim`:
 ```lua
--- init.lua
-function get_floating_window_border_width(config)
-   -- If not a floating window
-   if config.relative == '' then return 0 end
+return {
+  'is0n/fm-nvim',
+  cmd = { 'Vifm' },
+  config = function()
 
-   -- Get border and determine width
-   local border = config.border
-   if type(border) == 'table' then
-      return #border > 0 and 1 or 0
-   elseif type(border) == 'string' then
-      return border == 'none' and 0 or 1
-   end
+    -- Modify vifm_cmd
+    require('fm-nvim').setup({
+      cmds = {
+        vifm_cmd = 'vifm --server-name vifm-nvim-' .. vim.fn.getpid(), -- Set servername to vifm
+      }
+    })
 
-   return 0 -- Unknown border type
-end
-
-function get_window_info()
-   local win_id = vim.api.nvim_get_current_win()
-   local config = vim.api.nvim_win_get_config(win_id)
-   local x = config.col
-   local y = config.row
-   local w = config.width
-   local h = config.height
-   local bw = get_floating_window_border_width(config)
-   return x, y, w, h, bw
-end
-
-vim.api.nvim_create_autocmd({ 'WinEnter' }, {
-   pattern = { '*' },
-   callback = function()
-      local x, y, w, h, bw = get_window_info()
-      vim.env.VIFM_PREVIEW_WIN_X = x
-      vim.env.VIFM_PREVIEW_WIN_Y = y
-      vim.env.VIFM_PREVIEW_WIN_W = w
-      vim.env.VIFM_PREVIEW_WIN_H = h
-      vim.env.VIFM_PREVIEW_WIN_BORDER_WIDTH = bw
-      print(string.format('%dx%d @ %dx%d (%d)', w, h, x, y, bw)) -- Check code
-   end,
-})
--- NOTE: 'TermEnter' fails at the first `:Vifm` execution
+    function get_floating_window_border_width(config)
+      -- If not a floating window
+      if config.relative == '' then return 0 end
+      -- Get border and determine width
+      local border = config.border
+      if type(border) == 'table' then
+        return #border > 0 and 1 or 0
+      elseif type(border) == 'string' then
+        return border == 'none' and 0 or 1
+      end
+      return 0 -- Unknown border type
+    end
+    
+    vim.api.nvim_create_autocmd({ 'WinEnter', 'WinResized', 'VimResized' }, {
+      pattern = { '*' },
+      callback = function(ev)
+        if vim.bo.filetype == 'Fm' and vim.bo.buftype == 'terminal' then -- for fm-nvim
+          local win_id = vim.api.nvim_get_current_win()
+          local config = vim.api.nvim_win_get_config(win_id)
+          local y, x = unpack(vim.fn.win_screenpos(win_id))
+          local envs = {
+            { 'VIFM_PREVIEW_WIN_RELATIVE', config.relative },
+            { 'VIFM_PREVIEW_WIN_SPLIT', config.split },
+            { 'VIFM_PREVIEW_WIN_X', config.col or x - 1 },
+            { 'VIFM_PREVIEW_WIN_Y', config.row or y - 1 },
+            { 'VIFM_PREVIEW_WIN_W', config.width },
+            { 'VIFM_PREVIEW_WIN_H', config.height },
+            { 'VIFM_PREVIEW_WIN_BORDER_WIDTH', get_floating_window_border_width(config) },
+          }
+          if ev.event == 'WinEnter' then
+            for _, env in ipairs(envs) do
+              local env_name, value = unpack(env)
+              vim.env[env_name] = value
+            end
+          else
+            local vifm_cmds = {}
+            for _, v in ipairs(envs) do
+              local env_name, value = unpack(v)
+              local cmd
+              if type(value) == 'string' then
+                cmd = string.format('let $%s = "%s"', env_name, value)
+              elseif type(value) == 'number' then
+                cmd = string.format('let $%s = %d', env_name, value)
+              end
+              table.insert(vifm_cmds, cmd)
+            end
+            local vifm_cmd_str = table.concat(vifm_cmds, ' | ')
+            local vifm_servername = 'vifm-nvim-' .. vim.fn.getpid()
+            vim.fn.system({
+              'vifm',
+              '--server-name',
+              vifm_servername,
+              '--remote',
+              '-c',
+              vifm_cmd_str,
+            })
+            -- for checking
+            -- print(vifm_servername)
+            -- print(vifm_cmd_str)
+          end
+          -- for checking
+          -- print(vim.inspect({
+          --   x = config.col or x,
+          --   y = config.row or y,
+          --   w = config.width,
+          --   h = config.height,
+          --   split = config.split,
+          --   relative = config.relative,
+          --   bw = get_floating_window_border_width(config),
+          -- }))
+        end
+      end,
+    })
 ```
-This saves x,y,w,h,boder_width values to environmental variables, and `preview` command uses them for adjusting showing position.
+(Need `vifm.vim` example code)
 
-(The w,h are for future expansion.)
+This code saves relative,split,x,y,w,h,bw(boder_width) values to vifm's environmental variables.  
+Then `preview` command uses them for adjusting position.
+
+The w,h are for future expansion.
+
 
 ## Tips
 
@@ -315,17 +364,27 @@ This saves x,y,w,h,boder_width values to environmental variables, and `preview` 
 
 ## Known Issues
 
-- [ ] Shown in out of place in split window
 - [ ] 'clear' not works in `vifm on nvim on tmux`. It causes overlaping images.
-- [ ] If `notify.nvim` is shown in nvim, the vifm preview images are disturbed.
+- [ ] If `notify.nvim` is shown in nvim, the vifm preview images are disturbed on floating window.
 - [ ] The images are shown disturbed & overlapped in `tmux + nvim + vifm(with plugin)`, Because of not working `clear` command.
 
 
 ## Resolved Issues
 
-### tty not works
+### Cannot recieve updating of enviromental variables
 
-**Resolved** by [#1-zshrc-or-bashrc](#1-zshrc-or-bashrc)
+Updating `vim.env.{environmental_value_name}` on `WinResize` and `VimResize` doesn't work.  
+`vifm` and `preview.vifm` cannot recieve the updated environmental variables.  
+Can fetch only the variables are set on `vifm` startup.
+
+Resolved by [#4-optional-initlua-in-nvim](#4-optional-initlua-in-nvim).  
+
+- `vifm` has remote control option.
+- Set `--servername` option on vifm startup command. (e.g. `"vifm --servername vifm-nvim-" .. vim.fn.getpid()` )
+- Use the servername and `--remote -c` to set environmental variables for the specific `vifm` instance.
+
+
+### tty not works
 
 `tty` command returns like `/dev/ttys001` values on a `bare terminal` or `tmux`.
 But `tty` command returns `not a tty` strings in `vifmrc` or `nvim`.  
@@ -334,13 +393,17 @@ Additionally...
 Without the `tty` like `zsh -c 'setsid kitten icat --stdin=no --use-window-size $COLUMNS,$LINES,3000,2000 --transfer-mode=file myimage.png'` not works for me. 
 Though that sample code is on kitty official site.
 
+Resolved by [#1-zshrc-or-bashrc](#1-zshrc-or-bashrc)
+
 
 ### Shown in out of place in floating window
 
-Almost **resolved** by [#4-optional-initlua-in-nvim](#4-optional-initlua-in-nvim).  
-
 Floating x,y positions or border size are the cause.  
 And `set signcolumn=auto` is recommended in nvim's `init.lua`.
+
+Resolved by [#4-optional-initlua-in-nvim](#4-optional-initlua-in-nvim).  
+
+- Add `WinEnter` autocmd to get the current window's x,y positions.
 
 
 ## TODO
