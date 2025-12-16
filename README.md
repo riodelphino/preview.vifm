@@ -315,6 +315,7 @@ This saves x,y,w,h,boder_width values to environmental variables, and `preview` 
 
 ## Known Issues
 
+- [ ] Shown in out of place in split window
 - [ ] 'clear' not works in `vifm on nvim on tmux`. It causes overlaping images.
 - [ ] If `notify.nvim` is shown in nvim, the vifm preview images are disturbed.
 - [ ] The images are shown disturbed & overlapped in `tmux + nvim + vifm(with plugin)`, Because of not working `clear` command.
@@ -334,7 +335,7 @@ Without the `tty` like `zsh -c 'setsid kitten icat --stdin=no --use-window-size 
 Though that sample code is on kitty official site.
 
 
-### Shown in out of place
+### Shown in out of place in floating window
 
 Almost **resolved** by [#4-optional-initlua-in-nvim](#4-optional-initlua-in-nvim).  
 
@@ -344,8 +345,7 @@ And `set signcolumn=auto` is recommended in nvim's `init.lua`.
 
 ## TODO
 
-- [x] Check mtime between `preview` and `images/videos`, then re-generate preview.
-    - [x] Already tried, but canceled. Because it causes much slow down. The code is kept in `feat/compare-mtime` branch.
+- [ ] Fix: shown in out of place in split window
 - [ ] Supports gif images?
 - [ ] Supports other terminal apps
 - [ ] Supports other terminal graphics tools
