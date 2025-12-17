@@ -268,22 +268,21 @@ return {
       }
     })
 
-    function get_floating_window_border_width(config)
-      -- If not a floating window
-      if config.relative == '' then return 0 end
-      -- Get border and determine width
-      local border = config.border
-      if type(border) == 'table' then
-        return #border > 0 and 1 or 0
-      elseif type(border) == 'string' then
-        return border == 'none' and 0 or 1
-      end
-      return 0 -- Unknown border type
-    end
-    
     vim.api.nvim_create_autocmd({ 'WinEnter', 'WinResized', 'VimResized' }, {
       pattern = { '*' },
       callback = function(ev)
+        function get_floating_window_border_width(config)
+           -- If not a floating window
+           if config.relative == '' then return 0 end
+           -- Get border and determine width
+           local border = config.border
+           if type(border) == 'table' then
+             return #border > 0 and 1 or 0
+           elseif type(border) == 'string' then
+             return border == 'none' and 0 or 1
+           end
+           return 0 -- Unknown border type
+         end
         function get_envs()
           local win_id = vim.api.nvim_get_current_win()
           local config = vim.api.nvim_win_get_config(win_id)
@@ -372,6 +371,7 @@ The w,h are for future expansion.
 
 ## Known Issues
 
+- [ ] When previewing image/video, the preview is disturbed on window resize.
 - [ ] 'clear' not works in `vifm on nvim on tmux`. It causes overlaping images.
 - [ ] If `notify.nvim` is shown in nvim, the vifm preview images are disturbed on floating window.
 - [ ] The images are shown disturbed & overlapped in `tmux + nvim + vifm(with plugin)`, Because of not working `clear` command.
@@ -416,7 +416,6 @@ Resolved by [#4-optional-initlua-in-nvim](#4-optional-initlua-in-nvim).
 
 ## TODO
 
-- [ ] Fix: shown in out of place in split window
 - [ ] Supports gif images?
 - [ ] Supports other terminal apps
 - [ ] Supports other terminal graphics tools
