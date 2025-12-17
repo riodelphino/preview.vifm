@@ -1,6 +1,6 @@
 # preview.vifm
 
-A faster previewing script for image/video on vifm.
+A faster previewing script for image/video/pdf on vifm.
 
 https://github.com/user-attachments/assets/a0ef0f53-ee6a-4ddc-86c0-5e4d15c917c9
 
@@ -10,10 +10,10 @@ Pictures from <a href="https://unsplash.com/ja/@jeremythomasphoto?utm_content=cr
 ## Features
 
 Main features
-- Preview images/videos (as jpg images)
+- Preview image/video/pdf (as jpg images)
 - Cache preview files (much faster than direct preview)
 - Async generating for current dir
-- Re-generate preview file when the current image/video file is updated
+- Re-generate preview file when the current image/video/pdf file is updated
 - Modifiable graphic protocol commands
 
 Additional
@@ -76,7 +76,7 @@ USAGE:
    preview [action] [file] [pw] [ph] [px] [py]
 
 ARGS:
-   action    : clear | dir | image | video ...
+   action    : image | video | pdf | clear | refresh | delete | dir
    path      : target path
    pw        : panel width
    ph        : panel height
@@ -90,6 +90,9 @@ EXAMPLE CODE:
    Generate a preview file for a video:
       preview video %c %pw %ph %px %py
 
+   Generate a preview file for a pdf:
+      preview pdf %c %pw %ph %px %py
+
    Clear the preview in screen:
       preview clear
 
@@ -99,7 +102,7 @@ EXAMPLE CODE:
    Delete all preview files:
       preview delete
 
-   (Legacy) Generate previews for images/videos in a directory:
+   (Legacy) Generate previews for images/videos/pdfs in a directory:
       preview dir %d
 ```
 
@@ -173,18 +176,27 @@ let $SHOW_CMD_TEMPLATE = 'kitten icat --clear --stdin=no --place=%pwx%ph@%pxx%py
 let $CLEAR_CMD_TEMPLATE = 'kitten icat --clear --silent %N >%tty <%tty &'
 
 " Images
-let $IMAGE_QUALITY = 80                " {quality}        : Thumbnail quality
-let $IMAGE_SIZE = '600x600'            " {width}x{height} : Thumbnail size
-let $IMAGE_COLORSPACE_CMYK_TO_SRGB = 0 " {0=true|1=false} : Convert 'CMYK' to 'sRGB' or not
+let $IMAGE_QUALITY = 80                     " {0-100}            : Thumbnail quality (%)
+let $IMAGE_RESIZE = '600x600'               " '{width}x{height}' : Thumbnail size
+let $IMAGE_COLORSPACE_CMYK_TO_SRGB = 'true' " {'true'|'false'}   : Convert 'CMYK' to 'sRGB' or not
 " Image files filter
 let $IMAGE_PATTERNS = '*.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm,*.avif,*.webp,*.heic'
 
 " Videos
-let $VIDEO_QUALITY = 80   " {quolity}    : Thumbnail quality
-let $VIDEO_SEEK_TIME = 10 " {percentage} : Seek time (%) of the total video duration
-let $VIDEO_SIZE = 640     " {size}       : Thumbnail size. cropped to fit within {size}x{size}
+let $VIDEO_QUALITY = 80   " {0-100} : Thumbnail quality (%)
+let $VIDEO_SEEK_TIME = 10 " {0-100} : Seek time (%) of the total video duration
+let $VIDEO_RESIZE = 640   " {size}  : Thumbnail size. cropped to fit within {size}x{size}
 " Video files filter
 let $VIDEO_PATTERNS = '*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],*.qt,*.divx,*.as[fx]'
+
+" PDFs
+let $PDF_DENSITY = 120                    " {number}          : Pixel resolution
+let $PDF_COLORSPACE_CMYK_TO_SRGB = 'true' " {'true'|'false'}  : Convert 'CMYK' to 'sRGB' or not
+let $PDF_PAGE_TO_EXTRACT = 0              " {0-?}             : Page num to extract
+let $PDF_QUALITY = 80                     " {0-100}           : Thumbnail quality (%)
+let $PDF_RESIZE = '600x600'               " '{width}x{heiht}' : Thumbnail size
+" PDF files filter
+let $PDF_PATTERNS = '*.pdf'
 ```
 The placeholders `%pw`, `%ph`, `%px`, `%py`, `%file`, and `%tty` will be replaced with their actual values in preview command.
 
@@ -231,6 +243,12 @@ fileviewer {*.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm,*.avif,*.webp,*.heic},<image/*>
 " For videos
 fileviewer {*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],*.qt,*.divx,*.as[f},
    \ preview video %c %pw %ph %px %py
+   \ %pc
+   \ preview clear
+
+" For PDFs
+fileviewer {*.pdf},<pdf/*>
+   \ preview pdf %c %pw %ph %px %py
    \ %pc
    \ preview clear
 
@@ -416,6 +434,7 @@ Resolved by [#4-optional-initlua-in-nvim](#4-optional-initlua-in-nvim).
 
 ## TODO
 
+- [ ] Make image/video/pdf generating comands configurable and extensible for any filetype
 - [ ] Supports gif images?
 - [ ] Supports other terminal apps
 - [ ] Supports other terminal graphics tools
