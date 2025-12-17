@@ -268,22 +268,21 @@ return {
       }
     })
 
-    function get_floating_window_border_width(config)
-      -- If not a floating window
-      if config.relative == '' then return 0 end
-      -- Get border and determine width
-      local border = config.border
-      if type(border) == 'table' then
-        return #border > 0 and 1 or 0
-      elseif type(border) == 'string' then
-        return border == 'none' and 0 or 1
-      end
-      return 0 -- Unknown border type
-    end
-    
     vim.api.nvim_create_autocmd({ 'WinEnter', 'WinResized', 'VimResized' }, {
       pattern = { '*' },
       callback = function(ev)
+        function get_floating_window_border_width(config)
+           -- If not a floating window
+           if config.relative == '' then return 0 end
+           -- Get border and determine width
+           local border = config.border
+           if type(border) == 'table' then
+             return #border > 0 and 1 or 0
+           elseif type(border) == 'string' then
+             return border == 'none' and 0 or 1
+           end
+           return 0 -- Unknown border type
+         end
         function get_envs()
           local win_id = vim.api.nvim_get_current_win()
           local config = vim.api.nvim_win_get_config(win_id)
