@@ -141,25 +141,37 @@ GeneratePreview() {
    ((preview_mtime < path_mtime)) && preview_older=true
 
    # Generate preview
-   # if ((preview_missing || preview_older || force)); then
    if [[ $preview_missing == true || $preview_older == true || $force == true ]]; then
       [[ $preview_missing == true ]] && Log "$action" "generate" "preview_missing=true"
       [[ $preview_older == true ]] && Log "$action" "generate" "preview_older=true"
       [[ $force == true ]] && Log "$action" "generate" "force=true"
+      local colorspace_opt=""
       if [[ $action == "image" ]]; then
-         # magick "$file" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE $COLOR_SPACE "$preview_path" &>/dev/null # '&' at last works async ?
-         local colorspace=$(magick identify -format "%[colorspace]" "$path" 2>/dev/null)
-
-         if [[ $colorspace == "CMYK" ]] && [[ $IMAGE_COLORSPACE_CMYK_TO_SRGB == true ]]; then
-            magick "$path" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE -colorspace sRGB "$preview_path" &>/dev/null
-         else
-            magick "$path" -quality $IMAGE_QUALITY -resize $IMAGE_SIZE "$preview_path" &>/dev/null
+         # *** Currently skip check to avoid slowdown ***
+         # local colorspace=$(magick identify -format "%[colorspace]" "$path" 2>/dev/null)
+         # if [[ $colorspace == "CMYK" ]] && [[ $IMAGE_COLORSPACE_CMYK_TO_RGB == true ]]; then
+         #    colorspace_opt="-colorspace sRGB"
+         # fi
+         if [[ $IMAGE_COLORSPACE_CMYK_TO_RGB == true ]]; then
+            colorspace_opt="-colorspace sRGB"
          fi
+         magick "$path" -quality $IMAGE_QUALITY $colorspace_opt -resize $IMAGE_RESIZE -quality $IMAGE_QUALITY "$preview_path" &>/dev/null
          Log "$action" "generate" "'magick' processed '$path'"
       elif [[ $action == "video" ]]; then
          # ffmpeg -y -i "$file" -vf "select='eq(n,$VIDEO_FRAME)',scale=$VIDEO_SIZE" -frames:v 1 "$preview_path" &>/dev/null
-         ffmpegthumbnailer -s $VIDEO_SIZE -q $VIDEO_QUALITY -t $VIDEO_SEEK_TIME -i "$path" -o "$preview_path" &>/dev/null
+         ffmpegthumbnailer -s $VIDEO_RESIZE -q $VIDEO_QUALITY -t $VIDEO_SEEK_TIME -i "$path" -o "$preview_path" &>/dev/null
          Log "$action" "generate" "'ffmpegthumbnailer' processed '$path'"
+      elif [[ $action == "pdf" ]]; then
+         # *** Currently skip check to avoid slowdown ***
+         # local colorspace=$(magick identify -format "%[colorspace]" "$path" 2>/dev/null)
+         # if [[ $colorspace == *"CMYK"* ]] && [[ $PDF_COLORSPACE_CMYK_TO_RGB == true ]]; then
+         #    colorspace_opt="-colorspace sRGB"
+         # fi
+         if [[ $PDF_COLORSPACE_CMYK_TO_RGB == true ]]; then
+            colorspace_opt="-colorspace sRGB"
+         fi
+         magick $colorspace_opt -density $PDF_DENSITY "$path[$PDF_PAGE_TO_EXTRACT]" -flatten -resize $PDF_RESIZE -quality $PDF_QUALITY "$preview_path" &>/dev/null
+         Log "$action" "generate" "'magick' processed '$path'"
       else
          Log "$action" "generate" "ERROR '$action' is not a valid action."
       fi
@@ -260,7 +272,7 @@ Show() {
    Log "$ACTION" "show" "(end)"
 }
 
-#  ╭────────────────────────────────────────────────────────────────╮
+#  ╭──��─────────────────────────────────────────────────────────────╮
 #  │                          Main script                           │
 #  ╰────────────────────────────────────────────────────────────────╯
 Main() {
@@ -280,12 +292,8 @@ Main() {
 
    # Execute actions
    if [[ $ACTION == "clear" ]]; then
-      # clear
+      # Clear the displayed preview image
       Clear
-   elif [[ $ACTION == "dir" ]]; then
-      # (Legacy) Generate preview files for all images|videos in dir in background
-      GeneratePreviewAll image "$TARGET_ABSPATH" $IMAGE_PATTERNS false >/dev/null 2>&1 &
-      GeneratePreviewAll video "$TARGET_ABSPATH" $VIDEO_PATTERNS false >/dev/null 2>&1 &
    elif [[ $ACTION == "image" ]]; then
       # Generate preview files for all images in parent dir in background
       GeneratePreviewAll $ACTION "$PARENT" $IMAGE_PATTERNS false >/dev/null 2>&1 &
@@ -298,11 +306,22 @@ Main() {
       # Preview a video
       local preview_path=$(GeneratePreview $ACTION "$TARGET_ABSPATH" $VIDEO_PATTERNS false)
       Show "$preview_path"
+   elif [[ $ACTION == "pdf" ]]; then
+      # Generate preview files for all pdfs in parent dir in background
+      GeneratePreviewAll $ACTION "$PARENT" $PDF_PATTERNS false >/dev/null 2>&1 &
+      # Preview a pdf
+      local preview_path=$(GeneratePreview $ACTION "$TARGET_ABSPATH" $PDF_PATTERNS false)
+      Show "$preview_path"
    elif [[ $ACTION == "refresh" ]]; then
       GeneratePreviewAll image "$TARGET_ABSPATH" "$IMAGE_PATTERNS" true >/dev/null 2>&1 &
       GeneratePreviewAll video "$TARGET_ABSPATH" "$VIDEO_PATTERNS" true >/dev/null 2>&1 &
    elif [[ $ACTION == "delete" ]]; then
+      # Delete all cache files
       rm -f "$CACHE_DIR"/*
+   elif [[ $ACTION == "dir" ]]; then
+      # (Legacy) Generate preview files for all images|videos in dir in background
+      GeneratePreviewAll image "$TARGET_ABSPATH" $IMAGE_PATTERNS false >/dev/null 2>&1 &
+      GeneratePreviewAll video "$TARGET_ABSPATH" $VIDEO_PATTERNS false >/dev/null 2>&1 &
    fi
    Log "$ACTION" "main" "(end)"
 }
@@ -322,7 +341,11 @@ PY=$6
 TARGET_PATH="${TARGET_PATH//\\ / }" # replate '\ ' to ' '
 
 # Get abs path
-TARGET_ABSPATH=$(realpath "$TARGET_PATH")
+if [[ -n "$TARGET_PATH" && -e "$TARGET_PATH" ]]; then
+   TARGET_ABSPATH=$(realpath "$TARGET_PATH")
+else
+   TARGET_ABSPATH=""
+fi
 
 # Get Parent dir
 PARENT=$(GetParentDir "$TARGET_ABSPATH")
