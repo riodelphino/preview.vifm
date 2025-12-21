@@ -1,5 +1,15 @@
 local M = {}
 
+---@param cmd string
+---@return any
+function M.execute(cmd)
+  local f = io.popen(cmd)
+  if not f then return nil end
+  local ret = f:read("*l")
+  f:close()
+  return ret
+end
+
 ---@param dst table
 ---@param src table
 ---@return table merged_table
@@ -77,10 +87,7 @@ end
 
 function M.get_hash(str, hash_cmd)
   local cmd = string.format('printf %%q "%s" | %s', str, hash_cmd)
-  local f = io.popen(cmd)
-  if not f then return nil end
-  local ret = f:read("*l")
-  f:close()
+  local ret = M.execute(cmd)
   return ret:match("^%w+")
 end
 
@@ -97,10 +104,13 @@ end
 function M.glob(dir, patterns)
   local result = {}
   for _, pat in ipairs(patterns) do
-    local files = vifm.glob(dir .. "/" .. pat)
-    for _, f in ipairs(files) do
-      table.insert(result, f)
+    -- local cmd = string.format('ls -1 "%s/%s" 2>/dev/null', dir, pat)
+    local cmd = string.format('sh -c \'ls -1 "$1"/%s 2>/dev/null\' _ "%s"', pat, dir)
+    local f = io.popen(cmd)
+    for line in f:lines() do
+      table.insert(result, line)
     end
+    f:close()
   end
   return result
 end
@@ -109,10 +119,7 @@ end
 ---@return string? real_path
 function M.realpath(path)
   local cmd = string.format('cd "%s" 2>/dev/null && pwd -P', path)
-  local f = io.popen(cmd)
-  if not f then return nil end
-  local ret = f:read("*l")
-  f:close()
+  local ret = M.execute(cmd)
   return ret and ret:gsub("%s+$", "") or path
 end
 
@@ -120,7 +127,7 @@ end
 ---@return boolean
 function M.is_dir(path)
   local cmd = string.format('[ -d "%s" ]', path)
-  local ok = vifm.run({ cmd = cmd })
+  local ok = M.execute(cmd)
   return ok == true or ok == 0
 end
 
@@ -128,10 +135,7 @@ end
 ---@return number? timestamp
 function M.get_mtime(path)
   local cmd = string.format([[stat -f "%%m" "%s" 2>/dev/null || stat -c "%%Y" "%s" 2>/dev/null]], path, path)
-  local f = io.popen(cmd)
-  if not f then return nil end
-  local ret = f:read("*l")
-  f:close()
+  local ret = M.execute(cmd)
   return tonumber(ret)
 end
 

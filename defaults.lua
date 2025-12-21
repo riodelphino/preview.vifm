@@ -33,8 +33,8 @@ local config = {
           cmyk_to_rgb = true,
         },
         ---@type function|string
-        cmd = function(ctx)
-          ctx.colorspace = ctx.cmyk_to_rgb and "-colorspace sRGB" or ""
+        cmd = function(args)
+          args.colorspace = args.cmyk_to_rgb and "-colorspace sRGB" or ""
           return "magick '%{path}' %{colorspace} -resize %{resize} -quality %{quality} '%{out}'"
         end,
         preview_path = function(ctx)
@@ -43,6 +43,7 @@ local config = {
         end,
       },
     },
+
     gif = {
       patterns = {
         "*.gif",
@@ -62,46 +63,48 @@ local config = {
         end,
       },
     },
-    video = {
-      patterns = {
-        "*.avi",
-        "*.mp4",
-        "*.wmv",
-        "*.dat",
-        "*.3gp",
-        "*.ogv",
-        "*.mkv",
-        "*.mpg",
-        "*.mpeg",
-        "*.vob",
-        "*.fl[icv]",
-        "*.m2v",
-        "*.mov",
-        "*.webm",
-        "*.ts",
-        "*.mts",
-        "*.m4v",
-        "*.r[am]",
-        "*.qt",
-        "*.divx",
-        "*.as[fx]",
-      },
-      generate = {
-        args = {
-          quality = 80,
-          seek_time = 10,
-          resize = 640,
-        },
-        cmd = function(_)
-          return "ffmpegthumbnailer -s %{resize} -q %{quality} -t %{seek_time} -loglevel error -i '%{path}' -o '%{out}'"
-        end,
-        preview_path = function(ctx)
-          local path = string.format("%s/%s.jpg", ctx.cache_dir, ctx.hash)
-          return path
-        end,
-      },
-    },
 
+    -- video = {
+    --   patterns = {
+    --     "*.avi",
+    --     "*.mp4",
+    --     "*.wmv",
+    --     "*.dat",
+    --     "*.3gp",
+    --     "*.ogv",
+    --     "*.mkv",
+    --     "*.mpg",
+    --     "*.mpeg",
+    --     "*.vob",
+    --     "*.fl[icv]",
+    --     "*.m2v",
+    --     "*.mov",
+    --     "*.webm",
+    --     "*.ts",
+    --     "*.mts",
+    --     "*.m4v",
+    --     "*.r[am]",
+    --     "*.qt",
+    --     "*.divx",
+    --     "*.as[fx]",
+    --   },
+    --   generate = {
+    --     args = {
+    --       quality = 80,
+    --       seek_time = 10,
+    --       resize = 640,
+    --     },
+    --     cmd = function(_)
+    --       return "ffmpegthumbnailer -s %{resize} -q %{quality} -t %{seek_time} -loglevel error -i '%{path}' -o '%{out}'"
+    --     end,
+    --     preview_path = function(ctx)
+    --       local path = string.format("%s/%s.jpg", ctx.cache_dir, ctx.hash)
+    --       return path
+    --     end,
+    --   },
+    -- },
+
+    -- ERROR ?? 出力されない
     pdf = {
       patterns = { "*.pdf" },
       generate = {

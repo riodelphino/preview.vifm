@@ -43,13 +43,13 @@ function M.set_state(path, action_name, state)
     local hash_file = string.format("%s/%s.%s", config.cache.dir, util.get_hash(path, hash_cmd), action_name)
     local lock_file = hash_file .. ".lock"
     if state == "done" then
-      cmd = string.format("rm '%s'; touch '%s'", lock_file, hash_file)
+      cmd = string.format("rm '%s' >/dev/null 2>&1; touch '%s'>/dev/null 2>&1", lock_file, hash_file)
     elseif state == "locked" then
-      cmd = string.format("rm '%s'", lock_file)
+      cmd = string.format("rm '%s' >/dev/null 2>&1", lock_file)
     elseif state == "none" then
-      cmd = string.format("rm '%s'", hash_file)
+      cmd = string.format("rm '%s' >/dev/null 2>&1", hash_file)
     end
-    vifm.run({ cmd = cmd })
+    util.execute(cmd)
   else
     -- Files
     local ctx = {
@@ -60,17 +60,17 @@ function M.set_state(path, action_name, state)
     local preview_path = config.actions[action_name].preview_path(ctx)
     local lock_file = preview_path .. ".lock"
     if state == "done" then
-      cmd = string.format("rm '%s'", lock_file)
+      cmd = string.format("rm '%s' >/dev/null 2>&1", lock_file)
     elseif state == "locked" then
-      cmd = string.format("touch '%s'", lock_file)
+      cmd = string.format("touch '%s' >/dev/null 2>&1", lock_file)
     elseif state == "none" then
       if util.realpath(path) == util.realpath(preview_path) then
         cmd = "" -- Avoid removing the source file
       else
-        cmd = string.format("rm '%s'", preview_path)
+        cmd = string.format("rm '%s' >/dev/null 2>&1", preview_path)
       end
     end
-    vifm.run({ cmd = cmd })
+    util.execute(cmd)
   end
 end
 
@@ -139,17 +139,13 @@ function M.generate_preview(action_name, source, force)
   local preview_older = preview_mtime < source_mtime
   if not preview_older and not force then return end
 
-  local cmd
-  if type(action.generate.cmd) == "function" then
-    cmd = action.generate.cmd(args)
-  elseif type(action.generate.cmd) == "string" then
-    cmd = util.get_cmd(action.generate.cmd, args)
-  end
+  local cmd = util.get_cmd(action.generate.cmd(args), args)
 
   if cmd == "" then return end
 
   -- Generate
-  vifm.run({ cmd = cmd .. " >/dev/null 2>&1 &" })
+  -- vifm.sb.info("cmd: " .. cmd) -- DEBUG:
+  vifm.run({ cmd = cmd .. " >/dev/null 2>&1 &" }) -- DEBUG:
 end
 
 ---Generate previews for all files in dir
@@ -160,6 +156,7 @@ function M.generate_preview_all(cwd, ctx, force)
   for action_name, action in pairs(config.actions) do
     M.set_state(cwd, action_name, "locked")
     local files = util.glob(cwd, action.patterns)
+    -- vifm.sb.info(util.inspect(files)) -- DEBUG:
     -- Loop for the all pattern matched files
     for _, file in ipairs(files) do
       if util.realpath(file) ~= util.realpath(ctx.path) then -- Skip current file
@@ -183,7 +180,17 @@ local function clear(ctx)
   ctx.tty = os.getenv("VIFM_PREVIEW_TTY")
   local cmd_clear = config.command.clear
   cmd_clear = util.get_cmd(cmd_clear, ctx)
-  vifm.sb.info("clear: " .. cmd_clear)
+  -- vifm.sb.info("clear: " .. cmd_clear)
+end
+
+local function show() end
+
+local function refresh(ctx)
+  -- TODO: Add refresh code
+end
+
+local function delete(ctx)
+  -- TODO: Add delete code
 end
 
 local function preview(ctx)
@@ -194,35 +201,36 @@ local function preview(ctx)
   local action = config.actions[action_name]
   if not action then
     local mes = string.format("%s action is not defined.", action_name)
-    vifm.sb.error(mes)
+    -- vifm.sb.error(mes) -- DEBUG:
     return
   end
-  vifm.sb.info(table.concat(action.patterns, ","))
+  -- vifm.sb.info(table.concat(action.patterns, ","))
 
   -- Generate for current file
   M.generate_preview(action_name, ctx.path)
-  M.show()
+  show()
 
   -- Generate for all files in current dir
   -- TODO: ctx.path と一致したらスキップする
 
   local cwd = vifm.currview().cwd
-  M.generate_preview_all(cwd, ctx)
+  M.generate_preview_all(cwd, ctx) -- DEBUG: ずっと処理が続く
 end
-
-function M.show() end
-
-function M.refresh(ctx)
-  -- TODO: Add refresh code
-end
-
-function M.delete(ctx)
-  -- TODO: Add delete code
-end
-
+local cnt = 1
 vifm.addhandler({
   name = "preview",
   handler = function(ctx) preview(ctx) end,
+  -- handler = function(ctx)
+  --   vifm.sb.info("called! " .. cnt)
+  --   cnt = cnt + 1
+  --   preview(ctx)
+  --   return {}
+  -- end,
+  -- handler = function(ctx)
+  --   vifm.sb.info("呼ばれたよ " .. cnt)
+  --   cnt = cnt + 1
+  --   return {}
+  -- end,
 })
 
 vifm.addhandler({
