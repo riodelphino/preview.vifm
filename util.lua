@@ -138,9 +138,9 @@ end
 ---@param path string
 ---@return boolean
 function M.is_dir(path)
-  local cmd = string.format('if [ -d "%s" ]; then echo 0; else echo 1; fi', path)
+  local cmd = string.format('if [ -d "%s" ]; then echo "true"; else echo "false"; fi', path)
   local ret = M.execute(cmd)
-  return ret == "0"
+  return ret == "true"
 end
 
 ---@param path string
