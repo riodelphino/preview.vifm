@@ -47,6 +47,16 @@ function M.inspect(t, indent)
   return s .. pad .. "}"
 end
 
+-- Get environment as table
+function M.get_environment()
+  local env = {
+    nvim = os.getenv("NVIM") and true or false,
+    tmux = os.getenv("TMUX") and true or false,
+  }
+  env.terminal = not env.tmux
+  return env
+end
+
 -- WORKS
 -- function M.get_hash(str)
 --   local f = io.popen("printf %q " .. str .. " | shasum")
@@ -105,7 +115,9 @@ function M.glob(dir, patterns)
   local result = {}
   for _, pat in ipairs(patterns) do
     -- local cmd = string.format('ls -1 "%s/%s" 2>/dev/null', dir, pat)
-    local cmd = string.format('sh -c \'ls -1 "$1"/%s 2>/dev/null\' _ "%s"', pat, dir)
+    local cmd = string.format('ls -1 "%s"/%s 2>/dev/null', dir, pat)
+    -- local cmd = string.format('sh -c \'ls -1 "$1"/%s 2>/dev/null\' _ "%s"', pat, dir)
+    -- local cmd = string.format('sh -c \'ls -1 "$1"/%s 2>/dev/null\' _ "%s"', pat, dir)
     local f = io.popen(cmd)
     for line in f:lines() do
       table.insert(result, line)
@@ -126,9 +138,9 @@ end
 ---@param path string
 ---@return boolean
 function M.is_dir(path)
-  local cmd = string.format('[ -d "%s" ]', path)
-  local ok = M.execute(cmd)
-  return ok == true or ok == 0
+  local cmd = string.format('if [ -d "%s" ]; then echo 0; else echo 1; fi', path)
+  local ret = M.execute(cmd)
+  return ret == "0"
 end
 
 ---@param path string
