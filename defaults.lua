@@ -101,12 +101,12 @@ local config = {
       },
       generate = {
         args = {
-          quality = 80,
-          seek_time = 10,
-          resize = 640,
+          quality = 8, -- 0-10
+          seek_time = 10, -- 0-100 | "hh:mm:ss"
+          resize = 640, -- 0- (0:original size | 128:default)
         },
         cmd = function(_)
-          return "ffmpegthumbnailer -s %{resize} -q %{quality} -t %{seek_time} -loglevel error -i '%{path}' -o '%{out}'"
+          return "ffmpegthumbnailer -s %{resize} -q %{quality} -t %{seek_time} -i '%{path}' -o '%{out}'"
         end,
         preview_path = function(ctx)
           local path = string.format("%s/%s.jpg", ctx.cache_dir, ctx.hash)

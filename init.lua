@@ -154,6 +154,7 @@ function M.generate_preview(action_name, source, force, cb)
   -- Generate
   -- vifm.sb.info("cmd: " .. cmd) -- DEBUG:
   util.execute(cmd .. " >/dev/null 2>&1 &") -- DEBUG:
+  -- if action_name == "video" then vifm.sb.info(cmd) end
   if cb then cb() end
 end
 
