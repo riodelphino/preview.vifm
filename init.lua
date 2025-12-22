@@ -18,22 +18,35 @@ local config = dofile(os.getenv("VIFM") .. "/preview.lua")
 config = util.deep_merge(defaults, config)
 
 -- Global
-local prev_dir = ""
-local prev_state = {}
+local log_info = {} -- Keep log info (subcmd, action)
 
----@param subcmd string
 ---@param category string
 ---@param message string
-function M.log(subcmd, category, message)
-  local subcmd_len = 8
-  local category_len = 15
+function M.log(category, message)
+  local len = {
+    subcmd = 8,
+    action = 10,
+    category = 10,
+  }
   if config.log.enabled then
     local f = assert(io.open(config.log.path, "a"))
-    subcmd = string.format("%-" .. subcmd_len .. "s", subcmd)
-    category = string.format("%-" .. category_len .. "s", category)
-    f:write(string.format("[ %s ] %s: %s\n", subcmd, category, message))
+    subcmd = string.format("%-" .. len.subcmd .. "s", log_info.subcmd)
+    action = string.format("%-" .. len.action .. "s", log_info.action or "-")
+    category = string.format("%-" .. len.category .. "s", category)
+    f:write(string.format("[ %s ] %s | %s : %s\n", subcmd, action, category, message))
     f:close()
   end
+end
+
+---@param ctx table
+---@return table command_parts
+local function get_ctx_command_parts(ctx)
+  local subcmd, action, rest
+  subcmd, rest = ctx.command:match("^#" .. M.PLUGIN_NAME .. "#(%S+)%s*(.*)$")
+  if rest and rest ~= "" then
+    action, rest = rest:match("^(%S+)%s*(.*)$")
+  end
+  return { subcmd = subcmd, action = action, rest = rest }
 end
 
 ---@param path string
@@ -121,42 +134,41 @@ end
 ---@param force boolean?
 ---@param cb function?
 function M.generate_preview(action_name, ctx, force, cb)
-  -- 対象: 単一ファイル
-  -- すでにプレビューファイルが存在 -> そのままプレビュー表示
-  -- なければプレビュー画像を生成 -> プレビュー表示
-
   -- Get generate command
   local hash_cmd = config.cache.hash_cmd
   local action = config.actions[action_name]
   local hash = util.get_hash(ctx.path, hash_cmd)
   ctx.dst = string.format("%s/%s.%s", config.cache.dir, hash, action.generate.ext)
+
   -- Check if generation is necessary
+  if action.generate.cmd == "" then return end
   local preview_exists = vifm.exists(ctx.dst)
   if preview_exists and not force then -- TODO: Add state check ?
-    -- vifm.sb.info("Skipped action_name:" .. source)
-    if cb then cb(ctx) end
+    M.log("info", "Skipped preview generation for '" .. ctx.path .. "'")
+    if type(cb) == "function" then cb(ctx) end
     return
   end
-
   local preview_mtime = util.get_mtime(ctx.dst)
   local source_mtime = util.get_mtime(ctx.path)
   preview_mtime = preview_mtime or 0
   local preview_older = preview_mtime < source_mtime
   if not preview_older and not force then return end
 
+  -- Get cmd
   local args = {
     src = ctx.path,
     dst = ctx.dst,
   }
   local cmd = util.get_cmd(action.generate.cmd, args)
-
   if cmd == "" then return end
 
   -- Generate
-  -- vifm.sb.info("cmd: " .. cmd) -- DEBUG:
-  util.execute(cmd .. " >/dev/null 2>&1 &") -- DEBUG:
-  -- if action_name == "video" then vifm.sb.info(cmd) end
-  if cb then cb(ctx) end
+  if type(cb) == "function" then
+    util.execute(cmd .. " >/dev/null 2>&1") -- Sync and callback
+    if cb then cb(ctx) end
+  else
+    util.execute(cmd .. " >/dev/null 2>&1 &") -- Async
+  end
 end
 
 ---Generate previews for all files in dir
@@ -164,16 +176,17 @@ end
 ---@param ctx table
 ---@param force boolean?
 function M.generate_preview_all(cwd, ctx, force)
+  M.log("function", "(in ) generate_preview_all()")
+
   for action_name, action in pairs(config.actions) do
+    M.log("loop", action_name .. " action")
     if force then M.set_state(cwd, action_name, "none") end
-    -- vifm.sb.info("force: " .. (force and "true" or "false"))
     local state = M.get_state(cwd, action_name)
-    -- vifm.sb.info("state: " .. state) -- DEBUG:
     if state == "locked" or state == "done" then return end -- Exit if locked or done
     M.set_state(cwd, action_name, "locked")
     local files = util.glob(cwd, action.patterns)
-    -- vifm.sb.info(util.inspect(files)) -- DEBUG:
     -- Loop for the all pattern matched files
+    M.log("loop", util.inspect(action.patterns, 0, false))
     for _, file in ipairs(files) do
       if util.realpath(file) ~= util.realpath(ctx.path) then -- Skip current file
         M.generate_preview(action_name, ctx, force, nil)
@@ -181,26 +194,24 @@ function M.generate_preview_all(cwd, ctx, force)
     end
     M.set_state(cwd, action_name, "done")
   end
+  M.log("function", "(out) generate_preview_all()")
 end
 
 -- clear command
 local function clear(ctx)
-  -- local ctx_clear = {
-  --   file = preview_path,
-  --   px = 2,
-  --   py = 10,
-  --   pw = 20,
-  --   ph = 15,
-  --   tty = "tty019",
-  -- }
+  log_info = get_ctx_command_parts(ctx)
+  M.log("function", "(in ) clear()")
   ctx.tty = os.getenv("VIFM_PREVIEW_TTY")
   local cmd = config.command.clear
   cmd = util.get_cmd(cmd, ctx)
+  M.log("command", cmd)
   util.execute(cmd)
-  -- vifm.sb.info("clear: " .. cmd_clear)
+  M.log("function", "(out) clear()")
 end
 
 local function show(ctx)
+  M.log("function", "(in ) show()")
+
   local view = vifm.currview()
   local entry = view:entry(view.cursor.pos)
   local curr_path = entry.location .. "/" .. entry.name
@@ -217,21 +228,27 @@ local function show(ctx)
     ctx.x = ctx.x + os.getenv("VIFM_PREVIEW_WIN_X") + os.getenv("VIFM_PREVIEW_WIN_BORDER_WIDTH")
     ctx.y = ctx.y + os.getenv("VIFM_PREVIEW_WIN_Y") + os.getenv("VIFM_PREVIEW_WIN_BORDER_WIDTH")
   end
-  -- cmd = util.get_cmd(cmd .. " &", ctx)
-  -- vifm.sb.info(ctx.dst) -- DEBUG:
+  M.log("info", "ctx = " .. util.inspect(ctx, 0, false))
   cmd = util.get_cmd(cmd, ctx)
+  M.log("command", cmd)
   util.execute(cmd)
+
+  M.log("function", "(out) show()")
 end
 
 local function refresh(ctx)
+  log_info = get_ctx_command_parts(ctx)
   -- TODO: Add refresh code
 end
 
 local function delete(ctx)
+  log_info = get_ctx_command_parts(ctx)
   -- TODO: Add delete code
 end
 
 local function preview(ctx)
+  log_info = get_ctx_command_parts(ctx)
+  M.log("function", "(in ) preview()")
   ctx.tty = os.getenv("VIFM_PREVIEW_TTY")
 
   local action_name = ctx.command:match("^#" .. M.PLUGIN_NAME .. "#preview (%S+)")
@@ -250,6 +267,7 @@ local function preview(ctx)
   -- Generate for all files in current dir
   local cwd = vifm.currview().cwd
   M.generate_preview_all(cwd, ctx)
+  M.log("function", "(out) preview()")
 end
 
 vifm.addhandler({

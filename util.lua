@@ -30,19 +30,34 @@ function M.deep_copy(src) return M.deep_merge({}, src) end
 
 ---@param t table
 ---@param indent number?
+---@param linebreak boolean?
 ---@return string expanded_string
-function M.inspect(t, indent)
+function M.inspect(t, indent, linebreak)
   indent = indent or 2
+  linebreak = linebreak ~= false -- true is default
   local pad = string.rep("  ", indent)
-  local s = "{\n"
+  local s
+  if linebreak then
+    s = "{\n"
+  else
+    s = "{ "
+  end
   for k, v in pairs(t) do
-    s = s .. pad .. "  [" .. tostring(k) .. "] = "
+    s = s .. pad .. "[" .. tostring(k) .. "]" .. " = "
     if type(v) == "table" then
-      s = s .. M.inspect(v, indent + 1)
+      s = s .. M.inspect(v, indent + 1, linebreak)
     else
-      s = s .. tostring(v)
+      if type(v) == "string" then
+        s = s .. '"' .. tostring(v) .. '"'
+      else
+        s = s .. tostring(v)
+      end
     end
-    s = s .. ",\n"
+    if linebreak then
+      s = s .. ",\n"
+    else
+      s = s .. ", "
+    end
   end
   return s .. pad .. "}"
 end
@@ -57,56 +72,11 @@ function M.get_environment()
   return env
 end
 
--- WORKS
--- function M.get_hash(str)
---   local f = io.popen("printf %q " .. str .. " | shasum")
---   local out = f:read("*l")
---   f:close()
---   return out:match("^%w+")
--- end
-
--- ERROR
--- ---@param str string
--- ---@param hash_cmd string
--- ---@return string? hash
--- function M.get_hash(str, hash_cmd)
---   local cmd = string.format('printf %q "%s" | %s', str, hash_cmd)
---   local ret = vifm.run({ cmd = cmd, stdout = true })
---   return ret and ret:match("^%w+") or nil
--- end
-
--- ERROR
--- ---@param str string
--- ---@param hash_cmd string
--- ---@return string? hash
--- function M.get_hash(str, hash_cmd)
---   -- local cmd = string.format("printf %s | %s", str, hash_cmd)
---   local cmd = string.format('printf %q "%s" | %s', str, str, hash_cmd)
---   -- local ret = vifm.run({ cmd = cmd, stdout = true })
---   local ret = vifm.run({ cmd = cmd }) -- DEBUG: stdout 消してみた
---   return ret and ret:match("^%w+") or nil
--- end
-
--- function M.get_hash(str, hash_cmd)
---   local cmd = string.format('printf "%s" | %s', str:gsub('"', '\\"'), hash_cmd)
---   -- local out = vifm.run({ cmd = cmd, stdout = true })
---   -- local out = vifm.run({ cmd = cmd .. " >/dev/null 2>&1", stdout = true })
---   local ret = vifm.run({ cmd = cmd, stdout = true })
---   return ret and ret:match("^%w+")
--- end
-
 function M.get_hash(str, hash_cmd)
   local cmd = string.format('printf %%q "%s" | %s', str, hash_cmd)
   local ret = M.execute(cmd)
   return ret:match("^%w+")
 end
-
--- function M.get_hash(str, hash_cmd)
---   local safe = str:gsub('"', '\\"')
---   local cmd = string.format('echo "%s" | %s', safe, hash_cmd)
---   local ret = vifm.run({ cmd = cmd, stdout = true })
---   return ret and ret:match("^%w+")
--- end
 
 ---@param dir string
 ---@param patterns table
@@ -114,10 +84,7 @@ end
 function M.glob(dir, patterns)
   local result = {}
   for _, pat in ipairs(patterns) do
-    -- local cmd = string.format('ls -1 "%s/%s" 2>/dev/null', dir, pat)
     local cmd = string.format('ls -1 "%s"/%s 2>/dev/null', dir, pat)
-    -- local cmd = string.format('sh -c \'ls -1 "$1"/%s 2>/dev/null\' _ "%s"', pat, dir)
-    -- local cmd = string.format('sh -c \'ls -1 "$1"/%s 2>/dev/null\' _ "%s"', pat, dir)
     local f = io.popen(cmd)
     for line in f:lines() do
       table.insert(result, line)
