@@ -17,6 +17,10 @@ local defaults = require("defaults")
 local config = dofile(os.getenv("VIFM") .. "/preview.lua")
 config = util.deep_merge(defaults, config)
 
+-- Global
+local prev_dir = ""
+local prev_state = {}
+
 ---@param subcmd string
 ---@param category string
 ---@param message string
@@ -124,30 +128,31 @@ function M.generate_preview(action_name, source, force, cb)
   -- Get generate command
   local hash_cmd = config.cache.hash_cmd
   local action = config.actions[action_name]
-  local args = util.deep_copy(action.generate.args)
   local ctx = {
     cache_dir = config.cache.dir,
     source = source,
     hash = util.get_hash(source, hash_cmd),
   }
-  args.out = action.generate.preview_path(ctx)
-  args.path = source
+  local args = {
+    src = source,
+    dst = action.generate.preview_path(ctx),
+  }
 
   -- Check if generation is necessary
-  local preview_exists = vifm.exists(args.out)
+  local preview_exists = vifm.exists(args.dst)
   if preview_exists and not force then -- TODO: Add state check ?
     -- vifm.sb.info("Skipped action_name:" .. source)
     if cb then cb() end
     return
   end
 
-  local preview_mtime = util.get_mtime(args.out)
+  local preview_mtime = util.get_mtime(args.dst)
   local source_mtime = util.get_mtime(source)
   preview_mtime = preview_mtime or 0
   local preview_older = preview_mtime < source_mtime
   if not preview_older and not force then return end
 
-  local cmd = util.get_cmd(action.generate.cmd(args), args)
+  local cmd = util.get_cmd(action.generate.cmd, args)
 
   if cmd == "" then return end
 

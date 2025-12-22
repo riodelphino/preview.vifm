@@ -28,15 +28,7 @@ local config = {
         "*.heic",
       },
       generate = {
-        args = {
-          quality = 80,
-          resize = "600x600",
-          colorspace = "sRGB",
-        },
-        ---@type function|string
-        cmd = function(_)
-          return "magick '%{path}' -colorspace %{colorspace} -resize %{resize} -quality %{quality} '%{out}'"
-        end,
+        cmd = "magick '%{src}' -colorspace sRGB -resize 600x600 -quality 80 '%{dst}'",
         preview_path = function(ctx)
           local path = string.format("%s/%s.jpg", ctx.cache_dir, ctx.hash)
           return path
@@ -49,25 +41,7 @@ local config = {
         "*.gif",
       },
       generate = {
-        args = {
-          resize = "100x100",
-          coalesce = "-coalesce",
-          -- colors = "256",
-          background = "none",
-          layers = "optimize",
-        },
-        -- *** Show original gif file ***
-        -- ---@type function|string
-        -- cmd = function(_)
-        --   return "" -- No conversion for gif
-        -- end,
-        -- preview_path = function(ctx)
-        --   return ctx.source -- Show the original gif file
-        -- end,
-        ---@type function|string
-        cmd = function(_)
-          return "magick '%{path}' %{coalesce} -resize %{resize} -background %{background} -layers %{layers} '%{out}'"
-        end,
+        cmd = "magick '%{src}' -coalesce -resize 100x100 -background none -layers optimize '%{dst}'",
         preview_path = function(ctx)
           local path = string.format("%s/%s.gif", ctx.cache_dir, ctx.hash)
           return path
@@ -100,14 +74,7 @@ local config = {
         "*.as[fx]",
       },
       generate = {
-        args = {
-          quality = 8, -- 0-10
-          seek_time = 10, -- 0-100 | "hh:mm:ss"
-          resize = 640, -- 0- (0:original size | 128:default)
-        },
-        cmd = function(_)
-          return "ffmpegthumbnailer -s %{resize} -q %{quality} -t %{seek_time} -i '%{path}' -o '%{out}'"
-        end,
+        cmd = "ffmpegthumbnailer -s 640 -q 8 -t 10 -i '%{src}' -o '%{dst}'",
         preview_path = function(ctx)
           local path = string.format("%s/%s.jpg", ctx.cache_dir, ctx.hash)
           return path
@@ -119,16 +86,7 @@ local config = {
     pdf = {
       patterns = { "*.pdf" },
       generate = {
-        args = {
-          density = 120,
-          page = 0,
-          quality = 80,
-          resize = "600x600",
-          colorspace = "sRGB",
-        },
-        cmd = function(_)
-          return 'magick -colorspace %{colorspace} -density %{density} "%{path}[%{page}]" -flatten -resize %{resize} -quality %{quality} "%{out}"'
-        end,
+        cmd = 'magick -colorspace sRGB -density 120 "%{src}[0]" -flatten -resize 600x600 -quality 80 "%{dst}"',
         preview_path = function(ctx)
           local path = string.format("%s/%s.jpg", ctx.cache_dir, ctx.hash)
           return path
