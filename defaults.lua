@@ -26,9 +26,7 @@ local config = {
     },
     -- Gif
     gif = {
-      patterns = {
-        "*.gif",
-      },
+      patterns = { "*.gif" },
       generate = {
         cmd = "magick '%{src}' -coalesce -resize 200x200 -background none -layers optimize '%{dst}'",
         ext = "gif",

@@ -177,23 +177,30 @@ end
 ---@param force boolean?
 function M.generate_preview_all(cwd, ctx, force)
   M.log("function", "(in ) generate_preview_all()")
+  local saved_log_info = util.deep_copy(log_info)
+  local saved_ctx = util.deep_copy(ctx)
 
   for action_name, action in pairs(config.actions) do
+    log_info.action = action_name
     M.log("loop", action_name .. " action")
     if force then M.set_state(cwd, action_name, "none") end
     local state = M.get_state(cwd, action_name)
     if state == "locked" or state == "done" then return end -- Exit if locked or done
     M.set_state(cwd, action_name, "locked")
     local files = util.glob(cwd, action.patterns)
+    M.log("files", util.inspect(files, 0, false):gsub("%[%d*%] = ", ""))
     -- Loop for the all pattern matched files
-    M.log("loop", util.inspect(action.patterns, 0, false))
+    M.log("loop", util.inspect(action.patterns, 0, false):gsub("%[%d*%] = ", ""))
     for _, file in ipairs(files) do
-      if util.realpath(file) ~= util.realpath(ctx.path) then -- Skip current file
+      if util.realpath(file) ~= util.realpath(saved_ctx.path) then -- Skip if current file
+        ctx.path = file -- Set `ctx.path` temporarily
         M.generate_preview(action_name, ctx, force, nil)
       end
     end
     M.set_state(cwd, action_name, "done")
   end
+  ctx = util.deep_copy(saved_ctx) -- Restore ctx
+  log_info = util.deep_copy(saved_log_info) -- Restore log_info (NOTE: `log_info.action` will be contaminated with async generate_preview() function)
   M.log("function", "(out) generate_preview_all()")
 end
 
@@ -236,13 +243,27 @@ local function show(ctx)
   M.log("function", "(out) show()")
 end
 
-local function refresh(ctx)
-  log_info = get_ctx_command_parts(ctx)
-  -- TODO: Add refresh code
+---Refresh all cache files for cwd
+---@param info table vifm.info
+local function refresh(info)
+  log_info = { subcmd = "refresh", action = "-", rest = nil }
+  M.log("function", "(in ) refresh()")
+  local cwd = vifm.currview().cwd
+  local ctx = {
+    path = cwd,
+    tty = os.getenv("VIFM_PREVIEW_TTY"),
+  }
+
+  M.generate_preview_all(cwd, ctx, true) -- force generation
+  local mes = "Refreshed preview caches for '" .. cwd .. "'"
+  vifm.sb.info(mes)
+  M.log("function", "(out) refresh()")
 end
 
-local function delete(ctx)
-  log_info = get_ctx_command_parts(ctx)
+---Delete all cache files
+---@param info table vifm.info
+local function delete(info)
+  log_info = { subcmd = "delete", action = "-", rest = nil }
   -- TODO: Add delete code
 end
 
@@ -266,6 +287,7 @@ local function preview(ctx)
 
   -- Generate for all files in current dir
   local cwd = vifm.currview().cwd
+  M.log("info", "cwd = '" .. cwd .. "'")
   M.generate_preview_all(cwd, ctx)
   M.log("function", "(out) preview()")
 end
@@ -288,6 +310,26 @@ vifm.addhandler({
 vifm.addhandler({
   name = "delete",
   handler = function(ctx) delete(ctx) end,
+})
+
+vifm.cmds.add({
+  name = "preview",
+  handler = function(info)
+    vifm.sb.info(util.inspect(info.argv, 0, false))
+    if #info.argv == 0 then
+      vifm.sb.error("Specify subcmd for :preview command")
+      return
+    end
+    local subcmd = info.argv[1]
+    if subcmd == "refresh" then
+      local ctx = { path = nil }
+      refresh(info)
+    elseif subcmd == "delete" then
+      delete(info)
+    end
+  end,
+  minargs = 0,
+  maxargs = -1,
 })
 
 return M
