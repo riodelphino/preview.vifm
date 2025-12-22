@@ -146,9 +146,13 @@ end
 ---@param path string
 ---@return number? timestamp
 function M.get_mtime(path)
-  local cmd = string.format([[stat -f "%%m" "%s" 2>/dev/null || stat -c "%%Y" "%s" 2>/dev/null]], path, path)
-  local ret = M.execute(cmd)
-  return tonumber(ret)
+  if vifm.exists(path) then
+    local cmd = string.format([[stat -f "%%m" "%s" 2>/dev/null || stat -c "%%Y" "%s" 2>/dev/null]], path, path)
+    local ret = M.execute(cmd)
+    return tonumber(ret)
+  else
+    return 0
+  end
 end
 
 ---Replace placeholders

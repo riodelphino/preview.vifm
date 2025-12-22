@@ -117,10 +117,10 @@ function M.get_state(path, action_name)
 end
 
 ---@param action_name string
----@param source string
+---@param ctx table
 ---@param force boolean?
 ---@param cb function?
-function M.generate_preview(action_name, source, force, cb)
+function M.generate_preview(action_name, ctx, force, cb)
   -- 対象: 単一ファイル
   -- すでにプレビューファイルが存在 -> そのままプレビュー表示
   -- なければプレビュー画像を生成 -> プレビュー表示
@@ -128,30 +128,26 @@ function M.generate_preview(action_name, source, force, cb)
   -- Get generate command
   local hash_cmd = config.cache.hash_cmd
   local action = config.actions[action_name]
-  local ctx = {
-    cache_dir = config.cache.dir,
-    source = source,
-    hash = util.get_hash(source, hash_cmd),
-  }
-  local args = {
-    src = source,
-    dst = action.generate.preview_path(ctx),
-  }
-
+  local hash = util.get_hash(ctx.path, hash_cmd)
+  ctx.dst = string.format("%s/%s.%s", config.cache.dir, hash, action.generate.ext)
   -- Check if generation is necessary
-  local preview_exists = vifm.exists(args.dst)
+  local preview_exists = vifm.exists(ctx.dst)
   if preview_exists and not force then -- TODO: Add state check ?
     -- vifm.sb.info("Skipped action_name:" .. source)
-    if cb then cb() end
+    if cb then cb(ctx) end
     return
   end
 
-  local preview_mtime = util.get_mtime(args.dst)
-  local source_mtime = util.get_mtime(source)
+  local preview_mtime = util.get_mtime(ctx.dst)
+  local source_mtime = util.get_mtime(ctx.path)
   preview_mtime = preview_mtime or 0
   local preview_older = preview_mtime < source_mtime
   if not preview_older and not force then return end
 
+  local args = {
+    src = ctx.path,
+    dst = ctx.dst,
+  }
   local cmd = util.get_cmd(action.generate.cmd, args)
 
   if cmd == "" then return end
@@ -160,7 +156,7 @@ function M.generate_preview(action_name, source, force, cb)
   -- vifm.sb.info("cmd: " .. cmd) -- DEBUG:
   util.execute(cmd .. " >/dev/null 2>&1 &") -- DEBUG:
   -- if action_name == "video" then vifm.sb.info(cmd) end
-  if cb then cb() end
+  if cb then cb(ctx) end
 end
 
 ---Generate previews for all files in dir
@@ -180,7 +176,7 @@ function M.generate_preview_all(cwd, ctx, force)
     -- Loop for the all pattern matched files
     for _, file in ipairs(files) do
       if util.realpath(file) ~= util.realpath(ctx.path) then -- Skip current file
-        M.generate_preview(action_name, file, force, nil)
+        M.generate_preview(action_name, ctx, force, nil)
       end
     end
     M.set_state(cwd, action_name, "done")
@@ -209,7 +205,7 @@ local function show(ctx)
   local entry = view:entry(view.cursor.pos)
   local curr_path = entry.location .. "/" .. entry.name
   -- vifm.sb.info(util.inspect(entry))
-  if util.realpath(ctx.path) ~= curr_path then -- Skip if current entry is changed
+  if util.realpath(ctx.path) ~= curr_path then -- Skip if the cursor is already moved out
     vifm.sb.info("skip show for " .. entry.name)
     return
   end
@@ -222,6 +218,7 @@ local function show(ctx)
     ctx.y = ctx.y + os.getenv("VIFM_PREVIEW_WIN_Y") + os.getenv("VIFM_PREVIEW_WIN_BORDER_WIDTH")
   end
   -- cmd = util.get_cmd(cmd .. " &", ctx)
+  -- vifm.sb.info(ctx.dst) -- DEBUG:
   cmd = util.get_cmd(cmd, ctx)
   util.execute(cmd)
 end
@@ -248,7 +245,7 @@ local function preview(ctx)
   -- vifm.sb.info(table.concat(action.patterns, ","))
 
   -- Generate for current file
-  M.generate_preview(action_name, ctx.path, false, function() show(ctx) end)
+  M.generate_preview(action_name, ctx, false, function(_ctx) show(_ctx) end)
 
   -- Generate for all files in current dir
   local cwd = vifm.currview().cwd

@@ -10,7 +10,7 @@ local config = {
   },
 
   command = {
-    show = "kitten icat --clear --stdin=no --place=%{width}x%{height}@%{x}x%{y} --scale-up --transfer-mode=file '%{path}' >%{tty} <%{tty}",
+    show = "kitten icat --clear --stdin=no --place=%{width}x%{height}@%{x}x%{y} --scale-up --transfer-mode=file '%{dst}' >%{tty} <%{tty}",
     -- clear = "kitten icat --clear --silent %N >%{tty} <%{tty} &", -- "%N" cause error
     clear = "kitten icat --clear --silent >%{tty} <%{tty}",
   },
@@ -29,10 +29,7 @@ local config = {
       },
       generate = {
         cmd = "magick '%{src}' -colorspace sRGB -resize 600x600 -quality 80 '%{dst}'",
-        preview_path = function(ctx)
-          local path = string.format("%s/%s.jpg", ctx.cache_dir, ctx.hash)
-          return path
-        end,
+        ext = "jpg",
       },
     },
 
@@ -41,11 +38,8 @@ local config = {
         "*.gif",
       },
       generate = {
-        cmd = "magick '%{src}' -coalesce -resize 100x100 -background none -layers optimize '%{dst}'",
-        preview_path = function(ctx)
-          local path = string.format("%s/%s.gif", ctx.cache_dir, ctx.hash)
-          return path
-        end,
+        cmd = "magick '%{src}' -coalesce -resize 200x200 -background none -layers optimize '%{dst}'",
+        ext = "gif",
       },
     },
 
@@ -75,22 +69,15 @@ local config = {
       },
       generate = {
         cmd = "ffmpegthumbnailer -s 640 -q 8 -t 10 -i '%{src}' -o '%{dst}'",
-        preview_path = function(ctx)
-          local path = string.format("%s/%s.jpg", ctx.cache_dir, ctx.hash)
-          return path
-        end,
+        ext = "jpg",
       },
     },
 
-    -- ERROR ?? 出力されない
     pdf = {
       patterns = { "*.pdf" },
       generate = {
         cmd = 'magick -colorspace sRGB -density 120 "%{src}[0]" -flatten -resize 600x600 -quality 80 "%{dst}"',
-        preview_path = function(ctx)
-          local path = string.format("%s/%s.jpg", ctx.cache_dir, ctx.hash)
-          return path
-        end,
+        ext = "jpg",
       },
     },
   },
