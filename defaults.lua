@@ -1,7 +1,7 @@
 local config = {
   cache = {
     dir = os.getenv("HOME") .. "/.cache/vifm/preview",
-    hash_cmd = "shasum", -- "shasum256"
+    hash_cmd = "shasum", -- or "shasum256"
   },
 
   log = {
@@ -11,14 +11,19 @@ local config = {
 
   command = {
     show = "kitten icat --clear --stdin=no --place=%{width}x%{height}@%{x}x%{y} --scale-up --transfer-mode=file '%{dst}' >%{tty} <%{tty}",
-    -- clear = "kitten icat --clear --silent %N >%{tty} <%{tty} &", -- "%N" cause error
     clear = "kitten icat --clear --silent >%{tty} <%{tty}",
-  },
+  }, -- TODO: 起動時に cmd.show, cmd.clear が無ければこれを自動コピーするか？
 
   actions = {
     -- Image
     image = {
-      patterns = { "*.bmp", "*.jpg", "*.jpeg", "*.png", "*.xpm", "*.avif", "*.webp", "*.heic" },
+      patterns = { "*.bmp", "*.jpg", "*.jpeg", "*.png", "*.xpm", "*.avif", "*.webp", "*.heic" }, -- TODO: #preview.vifm#preview image "<image/*>" として受けるか？
+      cmd = { -- TODO: この形式に変更！！！
+        generate = "",
+        show = "",
+        clear = "",
+      },
+      preview_ext = "jpg", -- 変更ここまで
       generate = {
         cmd = "magick '%{src}' -colorspace sRGB -resize 600x600 -quality 80 '%{dst}'",
         ext = "jpg",

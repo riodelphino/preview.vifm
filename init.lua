@@ -248,6 +248,8 @@ end
 local function refresh(info)
   log_info = { subcmd = "refresh", action = "-", rest = nil }
   M.log("function", "(in ) refresh()")
+  vifm.sb.info("Refreshing preview caches...")
+
   local cwd = vifm.currview().cwd
   local ctx = {
     path = cwd,
@@ -255,8 +257,7 @@ local function refresh(info)
   }
 
   M.generate_preview_all(cwd, ctx, true) -- force generation
-  local mes = "Refreshed preview caches for '" .. cwd .. "'"
-  vifm.sb.info(mes)
+  vifm.sb.info("Refreshed preview caches for '" .. cwd .. "'")
   M.log("function", "(out) refresh()")
 end
 
@@ -315,14 +316,13 @@ vifm.addhandler({
 vifm.cmds.add({
   name = "preview",
   handler = function(info)
-    vifm.sb.info(util.inspect(info.argv, 0, false))
+    -- vifm.sb.info(util.inspect(info.argv, 0, false))
     if #info.argv == 0 then
       vifm.sb.error("Specify subcmd for :preview command")
       return
     end
     local subcmd = info.argv[1]
     if subcmd == "refresh" then
-      local ctx = { path = nil }
       refresh(info)
     elseif subcmd == "delete" then
       delete(info)
