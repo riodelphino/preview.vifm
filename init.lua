@@ -266,7 +266,54 @@ end
 local function delete(info)
   log_info = { subcmd = "delete", action = "-", rest = nil }
   -- TODO: Add delete code
+  util.execute('touch "/Users/rio/.cache/vifm/preview/test.txt"')
 end
+
+-- NOTE: 結論: 現状では coroutine は expose されてないので使えない。
+-- local coroutine = require("coroutine") -- NG
+-- print(util.inspect(_G)) -- NG
+-- print(_G.coroutine) -- nil
+--
+-- -- DEBUG: A test for coroutine
+-- local co = coroutine.create(function()
+--   for i = 1, 10 do
+--     vifm.sb.info("co: ", i)
+--   end
+-- end)
+--
+-- coroutine.resume(co)
+
+-- NOTE: この形ならOK！ このファイルの関数を実行できる。
+-- !vifm --remote -c "preview delete"
+-- !vifm --server-name vifm1 --remote -c "preview delete"
+-- ??? でも、だとしても、vifm.jobstart() できるのは shスクリプトのみでは？
+--
+-- NOTE: WORKS!! This can call vifm command asynchronously
+local function delayed_preview(delay)
+  local cmd = string.format("sleep %.3f; vifm --remote -c 'preview delete'", delay / 1000)
+  vifm.startjob({
+    cmd = cmd,
+    description = "delayed preview",
+  })
+end
+delayed_preview(2000)
+
+-- TODO: How to get `v:servername` from lua
+-- local ret = vifm.run({ cmd = "echo $(vifm --remote -c 'echo v:servername')" })
+-- vifm.sb.info("v:servername: " .. (ret or "nil")) -- Shows '0', then later 'vifm' is shown. NO USE.
+
+-- vifm.sb.info(vifm.sessions.current()) -- nil
+
+-- vifm.sb.info("vifm.opts: " .. util.inspect(vifm.opts)) -- Almost blank table {}
+
+-- local server = os.getenv("VIFM_SERVER_NAME") -- NOT WORKS
+-- vifm.sb.info(server)
+
+-- NOTE: This is the solution
+-- Set below code to vifmrc
+-- `let $VIFM_SERVER_NAME = v:servername`
+-- Then
+vifm.sb.info("$VIFM_SERVER_NAME: " .. os.getenv("VIFM_SERVER_NAME"))
 
 local function preview(ctx)
   log_info = get_ctx_command_parts(ctx)
@@ -283,24 +330,27 @@ local function preview(ctx)
   end
   -- vifm.sb.info(table.concat(action.patterns, ","))
 
-  -- Generate for current file
-  M.generate_preview(action_name, ctx, false, function(_ctx) show(_ctx) end)
+  -- sleep(config.preview_delay / 1000) -- DEBUG: REMOVE
+  -- vifm.sb.info(os.time())
 
-  -- Generate for all files in current dir
-  local cwd = vifm.currview().cwd
-  M.log("info", "cwd = '" .. cwd .. "'")
-  M.generate_preview_all(cwd, ctx)
+  -- -- Generate for current file
+  -- M.generate_preview(action_name, ctx, false, function(_ctx) show(_ctx) end)
+  --
+  -- -- Generate for all files in current dir
+  -- local cwd = vifm.currview().cwd
+  -- M.log("info", "cwd = '" .. cwd .. "'")
+  -- M.generate_preview_all(cwd, ctx)
   M.log("function", "(out) preview()")
 end
 
 vifm.addhandler({
   name = "preview",
-  handler = function(ctx) preview(ctx) end,
+  handler = function(ctx) preview(ctx) end, -- TODO: Change ctx -> info
 })
 
 vifm.addhandler({
   name = "clear",
-  handler = function(ctx) clear(ctx) end,
+  handler = function(ctx) clear(ctx) end, -- TODO: same above
 })
 
 vifm.addhandler({

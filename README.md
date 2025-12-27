@@ -273,6 +273,9 @@ set previewoptions+=graphicsdelay:0
 " Keymaps
 nnoremap <silent> pr :preview refresh<cr>
 nnoremap <silent> pd :preview delete<cr>
+
+" Set servername to env
+let $VIFM_SERVER_NAME = v:servername
 ```
 
 ### 4. (Optional) init.lua in nvim
@@ -285,11 +288,12 @@ return {
   'is0n/fm-nvim',
   cmd = { 'Vifm' },
   config = function()
+    local servername = 'vifm-nvim-' .. vim.fn.getpid()
 
     -- Modify vifm_cmd
     require('fm-nvim').setup({
       cmds = {
-        vifm_cmd = 'vifm --server-name vifm-nvim-' .. vim.fn.getpid(), -- Set servername to vifm
+        vifm_cmd = 'vifm --server-name ' .. servername, -- Set servername to vifm
       }
     })
 
@@ -313,6 +317,7 @@ return {
           local config = vim.api.nvim_win_get_config(win_id)
           local y, x = unpack(vim.fn.win_screenpos(win_id))
           local envs = {
+            -- { 'VIFM_SERVER_NAME', servername },
             { 'VIFM_PREVIEW_WIN_RELATIVE', config.relative },
             { 'VIFM_PREVIEW_WIN_SPLIT', config.split },
             { 'VIFM_PREVIEW_WIN_X', config.col or x - 1 },
@@ -413,7 +418,7 @@ Can fetch only the variables are set on `vifm` startup.
 Resolved by [#4-optional-initlua-in-nvim](#4-optional-initlua-in-nvim).  
 
 - `vifm` has remote control option.
-- Set `--servername` option on vifm startup command. (e.g. `"vifm --servername vifm-nvim-" .. vim.fn.getpid()` )
+- Set `--server-name` option on vifm startup command. (e.g. `"vifm --server-name vifm-nvim-" .. vim.fn.getpid()` )
 - Use the servername and `--remote -c` to set environmental variables for the specific `vifm` instance.
 
 
