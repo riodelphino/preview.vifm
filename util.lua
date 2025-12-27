@@ -124,10 +124,10 @@ end
 
 ---Replace placeholders
 ---@param cmd string
----@param ctx table
+---@param info table
 ---@return string cmd
-function M.get_cmd(cmd, ctx)
-  for k, v in pairs(ctx) do
+function M.get_cmd(cmd, info)
+  for k, v in pairs(info) do
     cmd = cmd:gsub("%%{" .. k .. "}", tostring(v))
   end
   return cmd

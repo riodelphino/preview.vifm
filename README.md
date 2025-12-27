@@ -90,7 +90,7 @@ fileviewer {*.bmp,*.jpg,*.jpeg,*.png,*.xpm,*.avif,*.webp,*.heic},<image/*>
    \ %pc
    \ #preview.vifm#clear
 
-" `%c %px %py %pw %ph` are given by `ctx` table arg to lua function. So it's not necessary to set here.
+" `%c %px %py %pw %ph` are given by `info` table arg to lua function. So it's not necessary to set here.
 " `%pc` is just a delimiter, between displaying command and cleaning command.
 ```
 
