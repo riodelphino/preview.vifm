@@ -1,5 +1,7 @@
 local M = {}
 
+local cnt = 0 -- DEBUG:
+
 -- Get/Set statics
 M.PLUGIN_NAME = "preview.vifm"
 M.TTY = os.getenv("VIFM_PREVIEW_TTY")
@@ -218,10 +220,13 @@ end
 local function show(info)
   M.log("function", "(in ) show()", info)
   local curr_path = util.get_current_filepath()
-  -- if util.realpath(info.path) ~= curr_path then -- Skip if the cursor is already moved out
-  --   M.log("info", "skip show for " .. vifm.fnamemodify(curr_path, ":t"), info)
-  --   return
-  -- end
+  if util.realpath(info.path) ~= util.realpath(curr_path) then -- Skip if the cursor is already moved out
+    M.log("info", "skip show for " .. vifm.fnamemodify(curr_path, ":t"), info)
+    M.log("info", "info.path: " .. info.path, info) -- DEBUG:
+    M.log("info", "cur_path : " .. curr_path, info) -- DEBUG:
+
+    return
+  end
 
   local cmd = config.command.show
   local env = util.get_environment()
@@ -283,23 +288,42 @@ local function preview(info)
   -- vifm.sb.info(os.time())
 
   -- -- Generate for current file
-  -- M.generate(info, function(_info) show(_info) end) -- DEBUG: ⭐️ ここを `vifm -remote -c ""` にするのでは？
+  M.generate(info, function(_info) show(_info) end) -- DEBUG: ⭐️ ここを `vifm -remote -c ""` にするのでは？
 
-  -- [Async version] Generate for current file
-  -- :preview generate {action} {x} {y} {width} {height} {path} {force}
-  local vifm_cmd = string.format('preview generate %s %d %d %d %d "%s" "%s"', info.action, info.x, info.y, info.width, info.height, info.path, info.force and "true" or "false")
-  local async_cmd = string.format("sleep %.3f; vifm --server-name %s --remote -c '%s'", M.SERVER_NAME, config.preview.delay / 1000, vifm_cmd)
-  vifm.startjob({
-    cmd = async_cmd,
-    description = "delayed generate() & show()",
-  })
-  M.log("info", "delayed generate() & show() is set.", info)
+  -- 無理っぽい
+  -- -- [Async version] Generate for current file
+  -- if not info.remote then
+  --   -- if info.remote then -- DEBUG: 逆にしてみる NG そりゃそうだ
+  --   -- :preview generate {action} {x} {y} {width} {height} {path} {force}
+  --   local vifm_cmd = string.format('preview generate %s %d %d %d %d "%s" %s %s', info.action, info.x, info.y, info.width, info.height, info.path, info.force and "true" or "false", "remote")
+  --   cnt = cnt + 1
+  --   -- vifm_cmd = string.format("echo '%d'", cnt) -- NG 無限ループ
+  --   -- vifm_cmd = string.format("!touch '/Users/rio/.cache/vifm/preview/test-%d'", cnt) -- NG 無限ループなのは一緒
+  --   -- vifm_cmd = "" -- DEBUG: これだと無限ループしない(＆ちらつかない)。なので、自動的な画面の再描画が原因っぽい。
+  --   M.log("info", "vifm_cmd: " .. vifm_cmd, info)
+  --   local async_cmd = string.format("sleep %.3f; vifm --server-name %s --remote -c '%s'", config.preview.delay / 1000, M.SERVER_NAME, vifm_cmd)
+  --   M.log("info", "async_cmd: " .. async_cmd, info)
+  --   vifm.startjob({
+  --     cmd = async_cmd,
+  --     description = "delayed generate() & show()",
+  --   })
+  --   M.log("info", "delayed generate() & show() is set.", info)
+  --
+  --   -- Generate for all files in current dir
+  --   local cwd = vifm.currview().cwd
+  --   M.log("info", "cwd = '" .. cwd .. "'", info)
+  --   info.path = cwd
+  --   -- if not info.remote then -- DEBUG: remote 呼び出し時を回避してみたが、そもそも fileviewer 側からの call なら info.remote は nil
+  --   M.generate_all(info) -- DEBUG: ここは async にしなくていいのか？ 諸々のチェックで、多少の UI ブロッキングはしているぞ？
+  --   -- end
+  -- end
 
   -- Generate for all files in current dir
   local cwd = vifm.currview().cwd
   M.log("info", "cwd = '" .. cwd .. "'", info)
   info.path = cwd
-  M.generate_all(info) -- DEBUG: ここは async にしなくていいのか？ 諸々のチェックで、多少の UI ブロッキングはしているぞ？
+  if not info.remote then M.generate_all(info) end
+
   M.log("function", "(out) preview()", info)
 end
 
@@ -320,6 +344,7 @@ vifm.addhandler({
     info.subcmd = "preview"
     info.action = info.command:match("^#" .. M.PLUGIN_NAME .. "#preview (%S+)")
     info.force = false
+    info.remote = false -- DEBUG: ほんとにこれ？ async
     -- vifm.sb.info(util.inspect(info))
     preview(info)
   end,
@@ -328,6 +353,7 @@ vifm.addhandler({
 vifm.addhandler({
   name = "clear",
   handler = function(info)
+    if info.remote then return end -- DEBUG: ほんとにこれ？ async | clear はさぁ、fileviewer からしか呼ばれないのよ。info.remote は nil なの常に。意味なし
     info = {
       subcmd = "clear",
       action = "-",
@@ -380,17 +406,20 @@ vifm.cmds.add({
     M.log("command", "(in ) preview", info)
     -- vifm.sb.info("info: " .. util.inspect(info)) -- TEST:
     if info.subcmd == "generate" then -- Asynchronously called by `fileviewer` in vifmrc
-      -- :preview generate {action} {x} {y} {width} {height} {path} {force}
-      --          #1       #2       #3  #4  #5      #6       #7     #8
+      -- :preview generate {action} {x} {y} {width} {height} {path} {force} {remote}
+      --          #1       #2       #3  #4  #5      #6       #7     #8      #9
       info.subcmd = info.argv[1]
       info.action = info.argv[2]
       info.x = info.argv[3]
       info.y = info.argv[4]
       info.width = info.argv[5]
       info.height = info.argv[6]
-      info.path = info.argv[7]
+      info.path = util.unquote(info.argv[7])
       info.force = info.argv[8]
+      info.remote = info.argv[9] == "remote" and true or false
+      info.tty = M.TTY
       M.generate(info, function() show(info) end)
+      -- M.generate(info, function() local a = 1 end)
     elseif info.subcmd == "refresh" then
       info.action = "-"
       refresh(info)

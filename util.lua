@@ -140,4 +140,8 @@ function M.get_current_filepath()
   local path = entry.location .. "/" .. entry.name
   return path
 end
+
+---Un-quote "" or ''
+function M.unquote(str) return (str:gsub('^["\'](.*)["\'"]$', "%1")) end
+
 return M

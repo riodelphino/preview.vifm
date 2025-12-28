@@ -16,7 +16,7 @@ local config = {
   }, -- TODO: 起動時に cmd.show, cmd.clear が無ければこれを自動コピーするか？
 
   preview = {
-    delay = 500, -- ms
+    delay = 200, -- ms
   },
 
   actions = {
