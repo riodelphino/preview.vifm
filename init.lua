@@ -282,8 +282,18 @@ local function preview(info)
   -- sleep(config.preview.delay / 1000) -- DEBUG: REMOVE
   -- vifm.sb.info(os.time())
 
-  -- Generate for current file
-  M.generate(info, function(_info) show(_info) end) -- DEBUG: ⭐️ ここを `vifm -remote -c ""` にするのでは？
+  -- -- Generate for current file
+  -- M.generate(info, function(_info) show(_info) end) -- DEBUG: ⭐️ ここを `vifm -remote -c ""` にするのでは？
+
+  -- [Async version] Generate for current file
+  -- :preview generate {action} {x} {y} {width} {height} {path} {force}
+  local vifm_cmd = string.format('preview generate %s %d %d %d %d "%s" "%s"', info.action, info.x, info.y, info.width, info.height, info.path, info.force and "true" or "false")
+  local async_cmd = string.format("sleep %.3f; vifm --server-name %s --remote -c '%s'", M.SERVER_NAME, config.preview.delay / 1000, vifm_cmd)
+  vifm.startjob({
+    cmd = async_cmd,
+    description = "delayed generate() & show()",
+  })
+  M.log("info", "delayed generate() & show() is set.", info)
 
   -- Generate for all files in current dir
   local cwd = vifm.currview().cwd
@@ -363,15 +373,15 @@ vifm.cmds.add({
   handler = function(info)
     -- vifm.sb.info(util.inspect(info.argv, 0, false))
     if #info.argv == 0 then
-      vifm.sb.error("Specify subcmd ':preview {preview|refresh|delete}'")
+      vifm.sb.error("Specify subcmd ':preview {generate|refresh|delete}'")
       return
     end
     info.subcmd = info.argv[1]
     M.log("command", "(in ) preview", info)
     -- vifm.sb.info("info: " .. util.inspect(info)) -- TEST:
-    if info.subcmd == "preview" then -- Asynchronously called by `fileviewer` in vifmrc
-      -- preview {action} {x} {y} {width} {height} {path} {force}
-      -- #1      #2       #3  #4  #5      #6       #7     #8
+    if info.subcmd == "generate" then -- Asynchronously called by `fileviewer` in vifmrc
+      -- :preview generate {action} {x} {y} {width} {height} {path} {force}
+      --          #1       #2       #3  #4  #5      #6       #7     #8
       info.subcmd = info.argv[1]
       info.action = info.argv[2]
       info.x = info.argv[3]
@@ -380,7 +390,7 @@ vifm.cmds.add({
       info.height = info.argv[6]
       info.path = info.argv[7]
       info.force = info.argv[8]
-      preview(info)
+      M.generate(info, function() show(info) end)
     elseif info.subcmd == "refresh" then
       info.action = "-"
       refresh(info)
