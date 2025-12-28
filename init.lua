@@ -169,7 +169,7 @@ function M.generate(info, cb)
   -- Generate
   if type(cb) == "function" then
     util.execute(cmd .. " >/dev/null 2>&1") -- Sync and callback
-    if cb then cb(info) end
+    cb(info)
   else
     util.execute(cmd .. " >/dev/null 2>&1 &") -- Async
   end
@@ -272,14 +272,12 @@ local function preview(info)
   M.log("function", "(in ) preview()", info)
   info.tty = M.TTY
 
-  -- vifm.sb.info(action .. ":\n" .. util.inspect(info))
   local action = config.actions[info.action]
   if not action then
     local mes = string.format("%s action is not defined.", info.action)
     vifm.sb.error(mes)
     return
   end
-  -- vifm.sb.info(table.concat(action.patterns, ","))
 
   -- sleep(config.preview.delay / 1000) -- DEBUG: REMOVE
   -- vifm.sb.info(os.time())
