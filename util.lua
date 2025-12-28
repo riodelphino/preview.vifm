@@ -79,18 +79,31 @@ function M.get_hash(str, hash_cmd)
 end
 
 ---@param dir string
----@param patterns table
+---@param patterns table|string
 ---@return table files
 function M.glob(dir, patterns)
+  local pats = {}
+
+  if type(patterns) == "string" then
+    for p in patterns:gmatch("[^,]+") do
+      pats[#pats + 1] = p:match("^%s*(.-)%s*$")
+    end
+  else
+    pats = patterns
+  end
+
   local result = {}
-  for _, pat in ipairs(patterns) do
+  for _, pat in ipairs(pats) do
     local cmd = string.format('ls -1 "%s"/%s 2>/dev/null', dir, pat)
     local f = io.popen(cmd)
-    for line in f:lines() do
-      table.insert(result, line)
+    if f then
+      for line in f:lines() do
+        result[#result + 1] = line
+      end
+      f:close()
     end
-    f:close()
   end
+
   return result
 end
 
@@ -143,5 +156,10 @@ end
 
 ---Un-quote "" or ''
 function M.unquote(str) return (str:gsub('^["\'](.*)["\'"]$', "%1")) end
+
+function M.get_cache_filepath(path, cache_dir, cache_ext, hash_cmd)
+  local hash = M.get_hash(path, hash_cmd)
+  return string.format("%s/%s.%s", cache_dir, hash, cache_ext)
+end
 
 return M

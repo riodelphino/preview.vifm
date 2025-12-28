@@ -65,34 +65,30 @@ function M.set_state(path, action_name, state)
   local cmd
   if util.is_dir(path) then
     -- Directories
-    local hash_file = string.format("%s/%s.%s", config.cache.dir, util.get_hash(path, hash_cmd), action_name)
-    local lock_file = hash_file .. ".lock"
+    local cache_file = string.format("%s/%s.%s", config.cache.dir, util.get_hash(path, hash_cmd), action_name)
+    local lock_file = cache_file .. ".lock"
     if state == "done" then
-      cmd = string.format("rm '%s' >/dev/null 2>&1; touch '%s' >/dev/null 2>&1", lock_file, hash_file)
+      cmd = string.format("rm '%s' >/dev/null 2>&1; touch '%s' >/dev/null 2>&1", lock_file, cache_file)
     elseif state == "locked" then
       cmd = string.format("touch '%s' >/dev/null 2>&1", lock_file)
     elseif state == "none" then
-      cmd = string.format("rm '%s' >/dev/null 2>&1", hash_file)
+      cmd = string.format("rm '%s' >/dev/null 2>&1", cache_file)
     end
     util.execute(cmd)
   else
     -- Files
-    local info = {
-      cache_dir = config.cache.dir,
-      source = path,
-      hash = util.get_hash(path, hash_cmd),
-    }
-    local preview_path = config.actions[action_name].generate.preview_path(info)
-    local lock_file = preview_path .. ".lock"
+    local action = config.actions[action_name]
+    local cache_file = util.get_cache_filepath(path, config.cache.dir, action.cache.ext, hash_cmd)
+    local lock_file = cache_file .. ".lock"
     if state == "done" then
       cmd = string.format("rm '%s' >/dev/null 2>&1", lock_file)
     elseif state == "locked" then
       cmd = string.format("touch '%s' >/dev/null 2>&1", lock_file)
     elseif state == "none" then
-      if util.realpath(path) == util.realpath(preview_path) then
+      if util.realpath(path) == util.realpath(cache_file) then
         cmd = "" -- Avoid removing the source file
       else
-        cmd = string.format("rm '%s' >/dev/null 2>&1", preview_path)
+        cmd = string.format("rm '%s' >/dev/null 2>&1", cache_file)
       end
     end
     util.execute(cmd)
@@ -106,27 +102,23 @@ function M.get_state(path, action_name)
   local hash_cmd = config.cache.hash_cmd
   if util.is_dir(path) then
     -- Directories
-    local hash_file = string.format("%s/%s.%s", config.cache.dir, util.get_hash(path, hash_cmd), action_name)
-    local lock_file = hash_file .. ".lock"
+    local cache_file = string.format("%s/%s.%s", config.cache.dir, util.get_hash(path, hash_cmd), action_name)
+    local lock_file = cache_file .. ".lock"
     if vifm.exists(lock_file) then
       return "locked"
-    elseif vifm.exists(hash_file) then
+    elseif vifm.exists(cache_file) then
       return "done"
     else
       return "none"
     end
   else
     -- Files
-    local info = {
-      cache_dir = config.cache.dir,
-      source = path,
-      hash = util.get_hash(path, hash_cmd),
-    }
-    local preview_path = config.actions[action_name].generate.preview_path(info)
-    local lock_file = preview_path .. ".lock"
+    local action = config.actions[action_name]
+    local cache_file = util.get_cache_filepath(path, config.cache.dir, action.cache.ext, hash_cmd)
+    local lock_file = cache_file .. ".lock"
     if vifm.exists(lock_file) then
       return "locked"
-    elseif vifm.exists(preview_path) then
+    elseif vifm.exists(cache_file) then
       return "done"
     else
       return "none"
@@ -140,11 +132,10 @@ function M.generate(info, cb)
   -- Get generate command
   local hash_cmd = config.cache.hash_cmd
   local action = config.actions[info.action]
-  local hash = util.get_hash(info.path, hash_cmd)
-  info.dst = string.format("%s/%s.%s", config.cache.dir, hash, action.generate.ext)
+  info.dst = util.get_cache_filepath(info.path, config.cache.dir, action.cache.ext, hash_cmd)
 
   -- Check if generation is necessary
-  if action.generate.cmd == "" then return end
+  if action.cmd.generate == "" then return end
   local preview_exists = vifm.exists(info.dst)
   if preview_exists and not info.force then -- TODO: Add state check ?
     M.log("info", "Skipped preview generation for '" .. info.path .. "'", info)
@@ -162,7 +153,7 @@ function M.generate(info, cb)
     src = info.path,
     dst = info.dst,
   }
-  local cmd = util.get_cmd(action.generate.cmd, args)
+  local cmd = util.get_cmd(action.cmd.generate, args)
   if cmd == "" then return end
 
   -- Generate
@@ -190,15 +181,7 @@ function M.generate_all(info)
     if state == "locked" or state == "done" then return end -- Exit if locked or done
     M.set_state(cwd, action_name, "locked")
 
-    local files = {}
-
-    for pat in action.patterns:gmatch("[^,]+") do
-      local matched = util.glob(cwd, pat)
-      for _, f in ipairs(matched) do
-        files[#files + 1] = f
-      end
-    end
-
+    local files = util.glob(cwd, action.patterns)
     M.log("files", util.inspect(files, 0, false):gsub("%[%d*%] = ", ""), _info)
     M.log("loop", action.patterns, _info)
 
@@ -217,7 +200,7 @@ end
 local function clear(info)
   M.log("function", "(in ) clear()", info)
   info.tty = M.TTY
-  local cmd = config.command.clear
+  local cmd = config.common.cmd.clear
   cmd = util.get_cmd(cmd, info)
   M.log("command", cmd, info)
   util.execute(cmd)
@@ -232,7 +215,7 @@ local function show(info)
     return
   end
 
-  local cmd = config.command.show
+  local cmd = config.common.cmd.show
   local env = util.get_environment()
   if env.nvim then
     info.x = info.x + os.getenv("VIFM_PREVIEW_WIN_X") + os.getenv("VIFM_PREVIEW_WIN_BORDER_WIDTH")

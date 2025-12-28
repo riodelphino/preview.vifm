@@ -10,10 +10,12 @@ local config = {
     path = os.getenv("HOME") .. "/.local/state/vifm/preview.log",
   },
 
-  command = {
-    show = "kitten icat --clear --stdin=no --place=%{width}x%{height}@%{x}x%{y} --scale-up --transfer-mode=file '%{dst}' >%{tty} <%{tty}",
-    clear = "kitten icat --clear --silent >%{tty} <%{tty}",
-  }, -- TODO: Copy cmd.show, cmd.clear to each actions on startup?
+  common = {
+    cmd = { -- TODO: Copy cmd.show, cmd.clear to each actions on startup? Then use it?
+      show = "kitten icat --clear --stdin=no --place=%{width}x%{height}@%{x}x%{y} --scale-up --transfer-mode=file '%{dst}' >%{tty} <%{tty}",
+      clear = "kitten icat --clear --silent >%{tty} <%{tty}",
+    },
+  },
 
   preview = {
     delay = 200, -- ms
@@ -23,38 +25,40 @@ local config = {
     -- Image
     image = {
       patterns = "*.bmp,*.jpg,*.jpeg,*.png,*.xpm,*.avif,*.webp,*.heic", -- TODO: Accepts "<image/*>" and "*.bmp,*.jpg" text
-      cmd = { -- TODO: Change to this style !!!
-        generate = "",
-        show = "",
-        clear = "",
+      cmd = {
+        generate = "magick '%{src}' -colorspace sRGB -resize 600x600 -quality 80 '%{dst}'",
       },
-      preview_ext = "jpg",
-      generate = {
-        cmd = "magick '%{src}' -colorspace sRGB -resize 600x600 -quality 80 '%{dst}'",
+      cache = {
         ext = "jpg",
       },
     },
     -- Gif
     gif = {
       patterns = "*.gif",
-      generate = {
-        cmd = "magick '%{src}' -coalesce -resize 200x200 -background none -layers optimize '%{dst}'",
+      cmd = {
+        generate = "magick '%{src}' -coalesce -resize 200x200 -background none -layers optimize '%{dst}'",
+      },
+      cache = {
         ext = "gif",
       },
     },
     -- Video
     video = {
       patterns = "*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],*.qt,*.divx,*.as[fx]",
-      generate = {
-        cmd = "ffmpegthumbnailer -s 640 -q 8 -t 10 -i '%{src}' -o '%{dst}'",
+      cmd = {
+        generate = "ffmpegthumbnailer -s 640 -q 8 -t 10 -i '%{src}' -o '%{dst}'",
+      },
+      cache = {
         ext = "jpg",
       },
     },
     -- PDF
     pdf = {
       patterns = "*.pdf",
-      generate = {
-        cmd = 'magick -colorspace sRGB -density 120 "%{src}[0]" -flatten -resize 600x600 -quality 80 "%{dst}"',
+      cmd = {
+        generate = 'magick -colorspace sRGB -density 120 "%{src}[0]" -flatten -resize 600x600 -quality 80 "%{dst}"',
+      },
+      cache = {
         ext = "jpg",
       },
     },
