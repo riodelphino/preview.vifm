@@ -1,11 +1,9 @@
 local M = {}
-M.PLUGIN_NAME = "preview.vifm"
 
--- local path = "/Users/rio/Projects/terminal/vifm/preview.vifm/util.lua"
--- local f = io.popen('stat -f "%m" "' .. path .. '" 2>/dev/null')
--- local out = f:read("*l")
--- f:close()
--- vifm.sb.info(out)
+-- Get/Set statics
+M.PLUGIN_NAME = "preview.vifm"
+M.TTY = os.getenv("VIFM_PREVIEW_TTY")
+M.SERVER_NAME = os.getenv("VIFM_SERVER_NAME")
 
 local base = os.getenv("VIFM") .. "/plugins/preview.vifm/?.lua;"
 package.path = base .. package.path
@@ -17,8 +15,17 @@ local defaults = require("defaults")
 local config = dofile(os.getenv("VIFM") .. "/preview.lua")
 config = util.deep_merge(defaults, config)
 
--- Global
-local log_info = {} -- Keep log info (subcmd, action)
+-- Create log dir
+if config.log.enabled then
+  local parent = vifm.fnamemodify(config.log.path, ":h")
+  util.execute(string.format("mkdir -p %s", parent))
+end
+
+-- Create cache dir
+if config.cache.enabled then
+  local cache_dir = config.cache.dir
+  util.execute(string.format("mkdir -p %s", cache_dir))
+end
 
 ---@param category string
 ---@param message string
@@ -29,11 +36,10 @@ function M.log(category, message, info)
     action = 10,
     category = 10,
   }
-  local _info = info or log_info -- Use info if it is set
   if config.log.enabled then
     local f = assert(io.open(config.log.path, "a"))
-    subcmd = string.format("%-" .. len.subcmd .. "s", _info.subcmd)
-    action = string.format("%-" .. len.action .. "s", _info.action or "-")
+    subcmd = string.format("%-" .. len.subcmd .. "s", info.subcmd)
+    action = string.format("%-" .. len.action .. "s", info.action or "-")
     category = string.format("%-" .. len.category .. "s", category)
     f:write(string.format("[ %s ] %s | %s : %s\n", subcmd, action, category, message))
     f:close()
@@ -77,8 +83,6 @@ function M.set_state(path, action_name, state)
       source = path,
       hash = util.get_hash(path, hash_cmd),
     }
-    -- vifm.sb.info("action_name: " .. action_name) -- DEBUG:
-    -- vifm.sb.info(util.inspect(config)) -- DEBUG:
     local preview_path = config.actions[action_name].generate.preview_path(info)
     local lock_file = preview_path .. ".lock"
     if state == "done" then
@@ -144,7 +148,7 @@ function M.generate(info, cb)
   if action.generate.cmd == "" then return end
   local preview_exists = vifm.exists(info.dst)
   if preview_exists and not info.force then -- TODO: Add state check ?
-    M.log("info", "Skipped preview generation for '" .. info.path .. "'")
+    M.log("info", "Skipped preview generation for '" .. info.path .. "'", info)
     if type(cb) == "function" then cb(info) end
     return
   end
@@ -175,8 +179,6 @@ end
 ---@param info table
 function M.generate_all(info)
   M.log("function", "(in ) generate_all()", info)
-  -- local saved_log_info = util.deep_copy(log_info)
-  -- local saved_info = util.deep_copy(info)
   local cwd = info.path
 
   local _info = util.deep_copy(info) -- Temporary info
@@ -188,28 +190,24 @@ function M.generate_all(info)
     if state == "locked" or state == "done" then return end -- Exit if locked or done
     M.set_state(cwd, action_name, "locked")
     local files = util.glob(cwd, action.patterns)
-    M.log("files", util.inspect(files, 0, false):gsub("%[%d*%] = ", ""))
+    M.log("files", util.inspect(files, 0, false):gsub("%[%d*%] = ", ""), _info)
     -- Loop for the all pattern matched files
-    M.log("loop", util.inspect(action.patterns, 0, false):gsub("%[%d*%] = ", ""))
+    M.log("loop", util.inspect(action.patterns, 0, false):gsub("%[%d*%] = ", ""), _info)
     for _, file in ipairs(files) do
       if util.realpath(file) ~= util.realpath(info.path) then -- Skip if current file
         _info.path = file -- Set current `path`
-        _info.force = true
         M.generate(_info, nil)
       end
     end
     M.set_state(cwd, action_name, "done")
   end
-  -- info = util.deep_copy(saved_info) -- Restore info
-  -- log_info = util.deep_copy(saved_log_info) -- Restore log_info (NOTE: `log_info.action` will be contaminated with async generate() function)
   M.log("function", "(out) generate_all()", info)
 end
 
 -- clear command
 local function clear(info)
-  log_info = get_info_command_parts(info)
   M.log("function", "(in ) clear()", info)
-  info.tty = os.getenv("VIFM_PREVIEW_TTY")
+  info.tty = M.TTY
   local cmd = config.command.clear
   cmd = util.get_cmd(cmd, info)
   M.log("command", cmd, info)
@@ -235,9 +233,9 @@ local function show(info)
     info.x = info.x + os.getenv("VIFM_PREVIEW_WIN_X") + os.getenv("VIFM_PREVIEW_WIN_BORDER_WIDTH")
     info.y = info.y + os.getenv("VIFM_PREVIEW_WIN_Y") + os.getenv("VIFM_PREVIEW_WIN_BORDER_WIDTH")
   end
-  M.log("info", "info = " .. util.inspect(info, 0, false))
+  M.log("info", "info = " .. util.inspect(info, 0, false), info)
   cmd = util.get_cmd(cmd, info)
-  M.log("command", cmd)
+  M.log("command", cmd, info)
   util.execute(cmd)
 
   M.log("function", "(out) show()", info)
@@ -251,7 +249,7 @@ local function refresh(info)
 
   local cwd = vifm.currview().cwd
   info.path = cwd
-  info.tty = os.getenv("VIFM_PREVIEW_TTY")
+  info.tty = M.TTY
   info.force = true
 
   M.generate_all(info) -- force generation
@@ -270,30 +268,10 @@ local function delete(info)
   M.log("function", "(out) delete()", info)
 end
 
--- NOTE: 結論: 現状では coroutine は expose されてないので使えない。
--- local coroutine = require("coroutine") -- NG
--- print(util.inspect(_G)) -- NG
--- print(_G.coroutine) -- nil
---
--- -- DEBUG: A test for coroutine
--- local co = coroutine.create(function()
---   for i = 1, 10 do
---     vifm.sb.info("co: ", i)
---   end
--- end)
---
--- coroutine.resume(co)
-
--- NOTE: This is the solution
--- Set below code to vifmrc
--- `let $VIFM_SERVER_NAME = v:servername`
--- Then
-vifm.sb.info("$VIFM_SERVER_NAME: " .. os.getenv("VIFM_SERVER_NAME"))
-
 local function preview(info)
   log_info = get_info_command_parts(info)
   M.log("function", "(in ) preview()", info)
-  info.tty = os.getenv("VIFM_PREVIEW_TTY")
+  info.tty = M.TTY
 
   -- vifm.sb.info(action .. ":\n" .. util.inspect(info))
   local action = config.actions[info.action]
@@ -304,7 +282,7 @@ local function preview(info)
   end
   -- vifm.sb.info(table.concat(action.patterns, ","))
 
-  -- sleep(config.preview_delay / 1000) -- DEBUG: REMOVE
+  -- sleep(config.preview.delay / 1000) -- DEBUG: REMOVE
   -- vifm.sb.info(os.time())
 
   -- Generate for current file
@@ -324,26 +302,48 @@ vifm.addhandler({
   handler = function(info)
     -- vifm.sb.info("info: " .. util.inspect(info)) -- TEST:
     -- Re-format info table
+    info.subcmd = "preview"
     info.action = info.command:match("^#" .. M.PLUGIN_NAME .. "#preview (%S+)")
     info.force = false
+    -- vifm.sb.info(util.inspect(info))
     preview(info)
   end,
 })
 
 vifm.addhandler({
   name = "clear",
-  handler = function(info) clear(info) end,
+  handler = function(info)
+    info = {
+      subcmd = "clear",
+      action = "-",
+    }
+    clear(info)
+  end,
 })
 
-vifm.addhandler({
-  name = "refresh",
-  handler = function(info) refresh(info) end,
-})
-
-vifm.addhandler({
-  name = "delete",
-  handler = function(info) delete(info) end,
-})
+-- TODO: NO NEED to set as handler
+-- vifm.addhandler({
+--   name = "refresh",
+--   handler = function(info)
+--     info = {
+--       subcmd = "refresh",
+--       action = "-",
+--     }
+--     refresh(info)
+--   end,
+-- })
+--
+-- vifm.addhandler({
+--   name = "delete",
+--
+--   handler = function(info)
+--     info = {
+--       subcmd = "delete",
+--       action = "-",
+--     }
+--     delete(info)
+--   end,
+-- })
 
 vifm.cmds.add({
   name = "preview",
@@ -380,7 +380,5 @@ vifm.cmds.add({
   minargs = 0,
   maxargs = -1,
 })
-
-vifm.sb.info("init.lua is loaded.")
 
 return M

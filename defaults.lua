@@ -1,5 +1,6 @@
 local config = {
   cache = {
+    enabled = true,
     dir = os.getenv("HOME") .. "/.cache/vifm/preview",
     hash_cmd = "shasum", -- or "shasum256"
   },
@@ -14,7 +15,9 @@ local config = {
     clear = "kitten icat --clear --silent >%{tty} <%{tty}",
   }, -- TODO: 起動時に cmd.show, cmd.clear が無ければこれを自動コピーするか？
 
-  preview_delay = 500, -- ms
+  preview = {
+    delay = 500, -- ms
+  },
 
   actions = {
     -- Image
