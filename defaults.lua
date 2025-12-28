@@ -6,7 +6,7 @@ local config = {
 
   log = {
     enabled = true,
-    path = os.getenv("HOME") .. "/.cache/vifm/preview/log",
+    path = os.getenv("HOME") .. "/.local/state/vifm/preview.log",
   },
 
   command = {
