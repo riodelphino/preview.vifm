@@ -1,6 +1,8 @@
 local M = {}
 
 local cnt = 0 -- DEBUG:
+M.PREV_PATH = ""
+M.REMOTE = false
 
 -- Get/Set statics
 M.PLUGIN_NAME = "preview.vifm"
@@ -175,6 +177,9 @@ function M.generate(info, cb)
   else
     util.execute(cmd .. " >/dev/null 2>&1 &") -- Async
   end
+
+  -- -- DEBUG: async どーだい？
+  -- if info.remote then M.REMOTE = false end
 end
 
 ---Generate previews for all files in dir
@@ -284,13 +289,23 @@ local function preview(info)
     return
   end
 
+  -- if M.PREV_PATH == info.path then
+  --   M.log("info", "same path. abort.", info)
+  --   M.log("function", "(out ) preview()", info)
+  --   return
+  -- end
+  -- if M.REMOTE then
+  --   M.log("info", "remote is running. abort.", info)
+  --   M.log("function", "(out ) preview()", info)
+  --   return
+  -- end
+
   -- sleep(config.preview.delay / 1000) -- DEBUG: REMOVE
   -- vifm.sb.info(os.time())
 
-  -- -- Generate for current file
+  -- Generate for current file
   M.generate(info, function(_info) show(_info) end) -- DEBUG: ⭐️ ここを `vifm -remote -c ""` にするのでは？
 
-  -- 無理っぽい
   -- -- [Async version] Generate for current file
   -- if not info.remote then
   --   -- if info.remote then -- DEBUG: 逆にしてみる NG そりゃそうだ
@@ -316,7 +331,19 @@ local function preview(info)
   --   -- if not info.remote then -- DEBUG: remote 呼び出し時を回避してみたが、そもそも fileviewer 側からの call なら info.remote は nil
   --   M.generate_all(info) -- DEBUG: ここは async にしなくていいのか？ 諸々のチェックで、多少の UI ブロッキングはしているぞ？
   --   -- end
+  --   --
+  --   --
+  --   -- ⭐️⭐️⭐️ むりっぽい。難しすぎる。あとは、bash スクリプトを & で実行するかな。 (ただしキャンセル出来ない？)
+  --   -- fileviewer からの関数で、$VIFM_CURR_FILEPATH に保存しておき、それを bash で一致不一致をチェックするか？
+  --
+  --   -- if info.remote then -- remote として呼び出された時は、ここで REMOTE をオフにする
+  --   --   M.REMOTE = false
+  --   -- else -- fileviewer から呼び出された場合は、REMOTE をオンにする (上記でasyncコマンドセット済みだから)
+  --   --   M.REMOTE = true
+  --   -- end
   -- end
+  --
+  -- M.PREV_PATH = info.path
 
   -- Generate for all files in current dir
   local cwd = vifm.currview().cwd
