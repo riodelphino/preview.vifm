@@ -133,7 +133,7 @@ end
 
 ---@param info table
 ---@param cb function?
-function M.generate_preview(info, cb)
+function M.generate(info, cb)
   -- Get generate command
   local hash_cmd = config.cache.hash_cmd
   local action = config.actions[info.action]
@@ -173,8 +173,8 @@ end
 
 ---Generate previews for all files in dir
 ---@param info table
-function M.generate_preview_all(info)
-  M.log("function", "(in ) generate_preview_all()")
+function M.generate_all(info)
+  M.log("function", "(in ) generate_all()", info)
   -- local saved_log_info = util.deep_copy(log_info)
   -- local saved_info = util.deep_copy(info)
   local cwd = info.path
@@ -195,30 +195,30 @@ function M.generate_preview_all(info)
       if util.realpath(file) ~= util.realpath(info.path) then -- Skip if current file
         _info.path = file -- Set current `path`
         _info.force = true
-        M.generate_preview(_info, nil)
+        M.generate(_info, nil)
       end
     end
     M.set_state(cwd, action_name, "done")
   end
   -- info = util.deep_copy(saved_info) -- Restore info
-  -- log_info = util.deep_copy(saved_log_info) -- Restore log_info (NOTE: `log_info.action` will be contaminated with async generate_preview() function)
-  M.log("function", "(out) generate_preview_all()")
+  -- log_info = util.deep_copy(saved_log_info) -- Restore log_info (NOTE: `log_info.action` will be contaminated with async generate() function)
+  M.log("function", "(out) generate_all()", info)
 end
 
 -- clear command
 local function clear(info)
   log_info = get_info_command_parts(info)
-  M.log("function", "(in ) clear()")
+  M.log("function", "(in ) clear()", info)
   info.tty = os.getenv("VIFM_PREVIEW_TTY")
   local cmd = config.command.clear
   cmd = util.get_cmd(cmd, info)
-  M.log("command", cmd)
+  M.log("command", cmd, info)
   util.execute(cmd)
-  M.log("function", "(out) clear()")
+  M.log("function", "(out) clear()", info)
 end
 
 local function show(info)
-  M.log("function", "(in ) show()")
+  M.log("function", "(in ) show()", info)
 
   local view = vifm.currview()
   local entry = view:entry(view.cursor.pos)
@@ -240,33 +240,34 @@ local function show(info)
   M.log("command", cmd)
   util.execute(cmd)
 
-  M.log("function", "(out) show()")
+  M.log("function", "(out) show()", info)
 end
 
 ---Refresh all cache files for cwd
-local function refresh()
-  log_info = { subcmd = "refresh", action = "-", rest = nil }
-  M.log("function", "(in ) refresh()")
+local function refresh(info)
+  -- log_info = { subcmd = "refresh", action = "-", rest = nil }
+  M.log("function", "(in ) refresh()", info)
   vifm.sb.info("Refreshing preview caches...")
 
   local cwd = vifm.currview().cwd
-  local info = {
-    path = cwd,
-    tty = os.getenv("VIFM_PREVIEW_TTY"),
-    force = true,
-  }
+  info.path = cwd
+  info.tty = os.getenv("VIFM_PREVIEW_TTY")
+  info.force = true
 
-  M.generate_preview_all(info) -- force generation
+  M.generate_all(info) -- force generation
   vifm.sb.info("Refreshed preview caches for '" .. cwd .. "'")
-  M.log("function", "(out) refresh()")
+  M.log("function", "(out) refresh()", info)
 end
 
 ---Delete all cache files
----@param info table vifm.info
+---@param info table
 local function delete(info)
-  log_info = { subcmd = "delete", action = "-", rest = nil }
+  -- log_info = { subcmd = "delete", action = "-", rest = nil }
   -- TODO: Add delete code
-  util.execute('touch "/Users/rio/.cache/vifm/preview/test.txt"')
+  M.log("function", "(in ) delete()", info)
+  -- util.execute('touch "/Users/rio/.cache/vifm/preview/test.txt"')
+  util.execute("")
+  M.log("function", "(out) delete()", info)
 end
 
 -- NOTE: 結論: 現状では coroutine は expose されてないので使えない。
@@ -291,7 +292,7 @@ vifm.sb.info("$VIFM_SERVER_NAME: " .. os.getenv("VIFM_SERVER_NAME"))
 
 local function preview(info)
   log_info = get_info_command_parts(info)
-  M.log("function", "(in ) preview()")
+  M.log("function", "(in ) preview()", info)
   info.tty = os.getenv("VIFM_PREVIEW_TTY")
 
   -- vifm.sb.info(action .. ":\n" .. util.inspect(info))
@@ -307,14 +308,14 @@ local function preview(info)
   -- vifm.sb.info(os.time())
 
   -- Generate for current file
-  M.generate_preview(info, function(_info) show(_info) end) -- DEBUG: ⭐️ ここを `vifm -remote -c ""` にするのでは？
+  M.generate(info, function(_info) show(_info) end) -- DEBUG: ⭐️ ここを `vifm -remote -c ""` にするのでは？
 
   -- Generate for all files in current dir
   local cwd = vifm.currview().cwd
-  M.log("info", "cwd = '" .. cwd .. "'")
+  M.log("info", "cwd = '" .. cwd .. "'", info)
   info.path = cwd
-  M.generate_preview_all(info) -- DEBUG: ここは async にしなくていいのか？ 諸々のチェックで、多少の UI ブロッキングはしているぞ？
-  M.log("function", "(out) preview()")
+  M.generate_all(info) -- DEBUG: ここは async にしなくていいのか？ 諸々のチェックで、多少の UI ブロッキングはしているぞ？
+  M.log("function", "(out) preview()", info)
 end
 
 -- Handlers are called by `fileviewer` command in vifmrc
@@ -352,9 +353,10 @@ vifm.cmds.add({
       vifm.sb.error("Specify subcmd ':preview {preview|refresh|delete}'")
       return
     end
+    info.subcmd = info.argv[1]
+    M.log("command", "(in ) preview", info)
     -- vifm.sb.info("info: " .. util.inspect(info)) -- TEST:
-    local subcmd = info.argv[1]
-    if subcmd == "preview" then
+    if info.subcmd == "preview" then
       -- preview {action} {x} {y} {width} {height} {path} {force}
       -- #1      #2       #3  #4  #5      #6       #7     #8
       info.subcmd = info.argv[1]
@@ -366,11 +368,14 @@ vifm.cmds.add({
       info.path = info.argv[7]
       info.force = info.argv[8]
       preview(info)
-    elseif subcmd == "refresh" then
+    elseif info.subcmd == "refresh" then
+      info.action = "-"
       refresh(info)
-    elseif subcmd == "delete" then
+    elseif info.subcmd == "delete" then
+      info.action = "-"
       delete(info)
     end
+    M.log("command", "(out) preview", info)
   end,
   minargs = 0,
   maxargs = -1,
