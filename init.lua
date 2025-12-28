@@ -269,6 +269,8 @@ local function delete(info)
   M.log("function", "(out) delete()", info)
 end
 
+---generate() -> show(), additionally run generate_all()
+---@param info table
 local function preview(info)
   log_info = get_info_command_parts(info)
   M.log("function", "(in ) preview()", info)
@@ -297,6 +299,14 @@ local function preview(info)
   M.log("function", "(out) preview()", info)
 end
 
+-- ╭───────────────────────────────────────────────────────────────╮
+-- │                Setup handlers for `fileviewer`                │
+-- ╰───────────────────────────────────────────────────────────────╯
+-- Setup:
+--   1. preview
+--   2. clear
+-- That's all and enough.
+
 -- Handlers are called by `fileviewer` command in vifmrc
 vifm.addhandler({
   name = "preview",
@@ -322,7 +332,7 @@ vifm.addhandler({
   end,
 })
 
--- TODO: NO NEED to set as handler
+-- TODO: NO NEED to set as handler for them
 -- vifm.addhandler({
 --   name = "refresh",
 --   handler = function(info)
@@ -346,6 +356,14 @@ vifm.addhandler({
 --   end,
 -- })
 
+-- ╭───────────────────────────────────────────────────────────────╮
+-- │                      Setup vifm command                       │
+-- ╰───────────────────────────────────────────────────────────────╯
+-- Purpose:
+--   1. To call from keymaps
+--   2. To call asynchronously by 'init.lua'-self
+
+---Setup `:preview` command
 vifm.cmds.add({
   name = "preview",
   handler = function(info)
@@ -357,7 +375,7 @@ vifm.cmds.add({
     info.subcmd = info.argv[1]
     M.log("command", "(in ) preview", info)
     -- vifm.sb.info("info: " .. util.inspect(info)) -- TEST:
-    if info.subcmd == "preview" then
+    if info.subcmd == "preview" then -- Asynchronously called by `fileviewer` in vifmrc
       -- preview {action} {x} {y} {width} {height} {path} {force}
       -- #1      #2       #3  #4  #5      #6       #7     #8
       info.subcmd = info.argv[1]
