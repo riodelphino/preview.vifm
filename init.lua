@@ -260,11 +260,12 @@ end
 ---Delete all cache files
 ---@param info table
 local function delete(info)
-  -- log_info = { subcmd = "delete", action = "-", rest = nil }
-  -- TODO: Add delete code
   M.log("function", "(in ) delete()", info)
-  -- util.execute('touch "/Users/rio/.cache/vifm/preview/test.txt"')
-  util.execute("")
+  local cmd = string.format("rm -rf %s/*", config.cache.dir)
+  util.execute(cmd)
+  local msg = string.format("Deleted all caches in '%s'", config.cache.dir)
+  vifm.sb.info(msg)
+  M.log("info", msg, info)
   M.log("function", "(out) delete()", info)
 end
 

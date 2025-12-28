@@ -1,7 +1,7 @@
 local config = {
   cache = {
-    enabled = true,
-    dir = os.getenv("HOME") .. "/.cache/vifm/preview",
+    enabled = true, -- TODO: cache 無し、の場合の if 分岐を実装！ (generate 時？) dst パスの取得も分岐しなくちゃ！
+    dir = os.getenv("HOME") .. "/.cache/vifm/preview", -- WARN: Be carefule to set this. `:preview delete` command will execute `rm -rf` in this dir
     hash_cmd = "shasum", -- or "shasum256"
   },
 
