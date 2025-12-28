@@ -274,8 +274,9 @@ local function preview(info)
   -- Generate for current file
   M.generate(info, function(_info) show(_info) end)
 
-  -- Generate for all files in current dir
+  -- Generate for all files in current dir in background
   local cwd = vifm.currview().cwd
+
   M.log("info", "cwd = '" .. cwd .. "'", info)
   info.path = cwd
   M.generate_all(info)
@@ -319,7 +320,7 @@ vifm.addhandler({
 -- ╰───────────────────────────────────────────────────────────────╯
 -- Purpose:
 --   1. To call from keymaps
---   2. To call asynchronously by 'init.lua'-self
+--   2. To call asynchronously by 'init.lua'-self (Deprecated)
 
 ---Setup `:preview` command
 vifm.cmds.add({
@@ -332,25 +333,26 @@ vifm.cmds.add({
     end
     info.subcmd = info.argv[1]
     M.log("command", "(in ) preview", info)
-    if info.subcmd == "generate" then -- Asynchronously called by `fileviewer` in vifmrc
-      -- :preview generate {action} {x} {y} {width} {height} {path} {force}
-      --          #1       #2       #3  #4  #5      #6       #7     #8
-      info.subcmd = info.argv[1]
-      info.action = info.argv[2]
-      info.x = info.argv[3]
-      info.y = info.argv[4]
-      info.width = info.argv[5]
-      info.height = info.argv[6]
-      info.path = util.unquote(info.argv[7])
-      info.force = info.argv[8]
-      info.tty = M.TTY
-      M.generate(info, function() show(info) end)
-    elseif info.subcmd == "refresh" then
+    if info.subcmd == "refresh" then
       info.action = "-"
       refresh(info)
     elseif info.subcmd == "delete" then
       info.action = "-"
       delete(info)
+    elseif info.subcmd == "generate" then -- (Deprecated)
+      -- Asynchronously called by `fileviewer` in vifmrc
+      -- -- :preview generate {action} {x} {y} {width} {height} {path} {force}
+      -- --          #1       #2       #3  #4  #5      #6       #7     #8
+      -- info.subcmd = info.argv[1]
+      -- info.action = info.argv[2]
+      -- info.x = info.argv[3]
+      -- info.y = info.argv[4]
+      -- info.width = info.argv[5]
+      -- info.height = info.argv[6]
+      -- info.path = util.unquote(info.argv[7])
+      -- info.force = info.argv[8]
+      -- info.tty = M.TTY
+      -- M.generate(info, function() show(info) end)
     end
     M.log("command", "(out) preview", info)
   end,

@@ -10,10 +10,11 @@ Pictures from <a href="https://unsplash.com/ja/@jeremythomasphoto?utm_content=cr
 ## Features
 
 Main features
-- Preview image/gif/video/pdf (as jpg images)
+- Preview image/gif/video/pdf/e.t.c.
 - Cache preview files (much faster than direct preview)
 - Async generating for current dir
-- Re-generate preview file when the current image/video/pdf file is updated
+- Re-generate preview file when the current image/video/pdf/e.t.c. file is updated
+- Add custom actions (e.g. gif, sound)
 - Modifiable graphic protocol commands
 
 Additional
@@ -35,13 +36,12 @@ Currently ensured to work with:
    - kitty
       - ✓ vifm directly use (Need to set `TERM` environmental variable)
       - nvim
-         - ✓ [vifm.vim](https://github.com/vifm/vifm.vim)
-         - ✓ [fm-nvim](https://github.com/is0n/fm-nvim)
+         - △ [fm-nvim](https://github.com/is0n/fm-nvim) (See [Known Issues](#known-issues))
       - tmux
          - ✓ vifm (directly use)
          - nvim
-            - △ [vifm.vim](https://github.com/vifm/vifm.vim) (`clear` not works)  
             - △ [fm-nvim](https://github.com/is0n/fm-nvim) (`clear` not works)  
+
 - Linux
    - Not tested
 - Windows
@@ -70,7 +70,7 @@ Not tested:
 └── defaults.lua : Default config file  
 ```
 
-## Command usage
+## Handler usage
 
 ```man
 USAGE:
@@ -78,7 +78,7 @@ USAGE:
 
 ARGS:
    subcmd    : preview | clear | refresh | delete
-   action    : image | video | pdf | e.t.c (only preview accepts `action` arg)
+   action    : image | video | pdf | e.t.c (only `preview` can accept `action` arg)
 ```
 
 EXAMPLE CODE:
@@ -156,52 +156,65 @@ defaults.lua:
 ```lua
 local config = {
   cache = {
-    dir = os.getenv("HOME") .. "/.cache/vifm/preview",
+    enabled = true, -- TODO: Implement a conditional branch for caching (or in generate()?); should switch how the dst path is resolved.
+    dir = os.getenv("HOME") .. "/.cache/vifm/preview", -- WARN: Be carefule to set this. `:preview delete` command will execute `rm -rf` in this dir
     hash_cmd = "shasum", -- or "shasum256"
   },
 
   log = {
     enabled = true,
-    path = os.getenv("HOME") .. "/.cache/vifm/preview/log",
+    path = os.getenv("HOME") .. "/.local/state/vifm/preview.log",
   },
 
-  command = {
-    show = "kitten icat --clear --stdin=no --place=%{width}x%{height}@%{x}x%{y} --scale-up --transfer-mode=file '%{dst}' >%{tty} <%{tty}",
-    clear = "kitten icat --clear --silent >%{tty} <%{tty}",
+  common = {
+    cmd = { -- TODO: Copy cmd.show, cmd.clear to each actions on startup? Then use it?
+      show = "kitten icat --clear --stdin=no --place=%{width}x%{height}@%{x}x%{y} --scale-up --transfer-mode=file '%{dst}' >%{tty} <%{tty}",
+      clear = "kitten icat --clear --silent >%{tty} <%{tty}",
+    },
+  },
+
+  preview = {
+    delay = 200, -- ms
   },
 
   actions = {
     -- Image
     image = {
-      patterns = { "*.bmp", "*.jpg", "*.jpeg", "*.png", "*.xpm", "*.avif", "*.webp", "*.heic" },
-      generate = {
-        cmd = "magick '%{src}' -colorspace sRGB -resize 600x600 -quality 80 '%{dst}'",
+      patterns = "*.bmp,*.jpg,*.jpeg,*.png,*.xpm,*.avif,*.webp,*.heic", -- TODO: Accepts "<image/*>" and "*.bmp,*.jpg" text
+      cmd = {
+        generate = "magick '%{src}' -colorspace sRGB -resize 600x600 -quality 80 '%{dst}'",
+      },
+      cache = {
         ext = "jpg",
       },
     },
     -- Gif
     gif = {
-      patterns = { "*.gif" },
-      generate = {
-        cmd = "magick '%{src}' -coalesce -resize 200x200 -background none -layers optimize '%{dst}'",
+      patterns = "*.gif",
+      cmd = {
+        generate = "magick '%{src}' -coalesce -resize 200x200 -background none -layers optimize '%{dst}'",
+      },
+      cache = {
         ext = "gif",
       },
     },
     -- Video
     video = {
-      patterns = { "*.avi", "*.mp4", "*.wmv", "*.dat", "*.3gp", "*.ogv", "*.mkv", "*.mpg", "*.mpeg", "*.vob", "*.fl[icv]", "*.m2v", "*.mov", "*.webm", "*.ts", "*.mts", "*.m4v", "*.r[am]", "*.qt", "*.divx", "*.as[fx]" },
-      generate = {
-        cmd = "ffmpegthumbnailer -s 640 -q 8 -t 10 -i '%{src}' -o '%{dst}'",
+      patterns = "*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],*.qt,*.divx,*.as[fx]",
+      cmd = {
+        generate = "ffmpegthumbnailer -s 640 -q 8 -t 10 -i '%{src}' -o '%{dst}'",
+      },
+      cache = {
         ext = "jpg",
       },
     },
     -- PDF
     pdf = {
-      patterns = {
-        "*.pdf",
+      patterns = "*.pdf",
+      cmd = {
+        generate = 'magick -colorspace sRGB -density 120 "%{src}[0]" -flatten -resize 600x600 -quality 80 "%{dst}"',
       },
-      generate = {
-        cmd = 'magick -colorspace sRGB -density 120 "%{src}[0]" -flatten -resize 600x600 -quality 80 "%{dst}"',
+      cache = {
         ext = "jpg",
       },
     },
@@ -219,9 +232,11 @@ The placeholders `%{width}`, `%{height}`, `%{x}`, `%{y}`, `%{dst}`, and `%{tty}`
 ##### kitten icat
 WORKS. Same above.
 ```lua
-command = { -- kitten icat
-  show = "kitten icat --clear --stdin=no --place=%{width}x%{height}@%{x}x%{y} --scale-up --transfer-mode=file '%{dst}' >%{tty} <%{tty}",
-  clear = "kitten icat --clear --silent >%{tty} <%{tty}",
+common = {
+  cmd = { -- kitten icat
+    show = "kitten icat --clear --stdin=no --place=%{width}x%{height}@%{x}x%{y} --scale-up --transfer-mode=file '%{dst}' >%{tty} <%{tty}",
+    clear = "kitten icat --clear --silent >%{tty} <%{tty}",
+  },
 },
 ```
 
@@ -229,9 +244,11 @@ command = { -- kitten icat
 Currently `timg` is not supported. Colors & text block images are disturbed somehow.  
 Need your inspection and PR.
 ```lua
-command = { -- timg (Not works for now)
-  show = "timg -p sixel -g %{width}x%{height} '%{dst}'",
-  clear = "timg -clear",
+common = {
+  cmd = { -- timg (Not works for now)
+    show = "timg -p sixel -g %{width}x%{height} '%{dst}'",
+    clear = "timg -clear",
+  },
 },
 ```
 
@@ -274,7 +291,7 @@ set previewoptions+=graphicsdelay:0
 nnoremap <silent> pr :preview refresh<cr>
 nnoremap <silent> pd :preview delete<cr>
 
-" Set servername to env
+" Set servername to env (for future expansion)
 let $VIFM_SERVER_NAME = v:servername
 ```
 
@@ -403,7 +420,9 @@ The w,h are for future expansion.
 
 - [ ] The preview is disturbed on terminal window resize.
 - [ ] nvim
-  - [ ] 'clear' not works in `tmux + nvim + vifm`. It causes overlaping images.
+  - [ ] `kitty + nvim + vifm` cause error:
+      - `This terminal emulator does not support the graphics protocol, use a terminal emulator such as kitty that does support it`
+  - [ ] `clear` not works in `tmux + nvim + vifm`. It causes overlaping images.
   - [ ] If `notify.nvim` is shown in nvim, the vifm preview images are disturbed on floating window.
 
 
@@ -448,7 +467,7 @@ Resolved by [#4-optional-initlua-in-nvim](#4-optional-initlua-in-nvim).
 
 - [ ] Supports other terminal apps
 - [ ] Supports other terminal graphics protocols
-
+- [ ] Wanna support async cursor movement and preview (Needs `coroutine` enabled in vifm lua)
 
 ## Related Projects
 
