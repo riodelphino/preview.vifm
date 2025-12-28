@@ -132,4 +132,12 @@ function M.get_cmd(cmd, info)
   end
   return cmd
 end
+
+---Return current file path in currview
+function M.get_current_filepath()
+  local view = vifm.currview()
+  local entry = view:entry(view.cursor.pos)
+  local path = entry.location .. "/" .. entry.name
+  return path
+end
 return M

@@ -217,15 +217,11 @@ end
 
 local function show(info)
   M.log("function", "(in ) show()", info)
-
-  local view = vifm.currview()
-  local entry = view:entry(view.cursor.pos)
-  local curr_path = entry.location .. "/" .. entry.name
-  -- vifm.sb.info(util.inspect(entry))
-  if util.realpath(info.path) ~= curr_path then -- Skip if the cursor is already moved out
-    vifm.sb.info("skip show for " .. entry.name)
-    return
-  end
+  local curr_path = util.get_current_filepath()
+  -- if util.realpath(info.path) ~= curr_path then -- Skip if the cursor is already moved out
+  --   M.log("info", "skip show for " .. vifm.fnamemodify(curr_path, ":t"), info)
+  --   return
+  -- end
 
   local cmd = config.command.show
   local env = util.get_environment()
