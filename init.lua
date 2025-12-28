@@ -1,9 +1,5 @@
 local M = {}
 
-local cnt = 0 -- DEBUG:
-M.PREV_PATH = ""
-M.REMOTE = false
-
 -- Get/Set statics
 M.PLUGIN_NAME = "preview.vifm"
 M.TTY = os.getenv("VIFM_PREVIEW_TTY")
@@ -69,7 +65,6 @@ function M.set_state(path, action_name, state)
   local cmd
   if util.is_dir(path) then
     -- Directories
-    -- vifm.sb.info("\nset_state set to : " .. path .. " : " .. action_name .. " : " .. state) -- DEBUG:
     local hash_file = string.format("%s/%s.%s", config.cache.dir, util.get_hash(path, hash_cmd), action_name)
     local lock_file = hash_file .. ".lock"
     if state == "done" then
@@ -177,9 +172,6 @@ function M.generate(info, cb)
   else
     util.execute(cmd .. " >/dev/null 2>&1 &") -- Async
   end
-
-  -- -- DEBUG: async どーだい？
-  -- if info.remote then M.REMOTE = false end
 end
 
 ---Generate previews for all files in dir
@@ -192,17 +184,27 @@ function M.generate_all(info)
   for action_name, action in pairs(config.actions) do
     _info.action = action_name -- Set current `action`
     M.log("loop", action_name .. " action", _info)
+
     if info.force then M.set_state(cwd, action_name, "none") end
     local state = M.get_state(cwd, action_name)
     if state == "locked" or state == "done" then return end -- Exit if locked or done
     M.set_state(cwd, action_name, "locked")
-    local files = util.glob(cwd, action.patterns)
+
+    local files = {}
+
+    for pat in action.patterns:gmatch("[^,]+") do
+      local matched = util.glob(cwd, pat)
+      for _, f in ipairs(matched) do
+        files[#files + 1] = f
+      end
+    end
+
     M.log("files", util.inspect(files, 0, false):gsub("%[%d*%] = ", ""), _info)
-    -- Loop for the all pattern matched files
-    M.log("loop", util.inspect(action.patterns, 0, false):gsub("%[%d*%] = ", ""), _info)
+    M.log("loop", action.patterns, _info)
+
     for _, file in ipairs(files) do
-      if util.realpath(file) ~= util.realpath(info.path) then -- Skip if current file
-        _info.path = file -- Set current `path`
+      if util.realpath(file) ~= util.realpath(info.path) then
+        _info.path = file
         M.generate(_info, nil)
       end
     end
@@ -226,10 +228,7 @@ local function show(info)
   M.log("function", "(in ) show()", info)
   local curr_path = util.get_current_filepath()
   if util.realpath(info.path) ~= util.realpath(curr_path) then -- Skip if the cursor is already moved out
-    M.log("info", "skip show for " .. vifm.fnamemodify(curr_path, ":t"), info)
-    M.log("info", "info.path: " .. info.path, info) -- DEBUG:
-    M.log("info", "cur_path : " .. curr_path, info) -- DEBUG:
-
+    M.log("info", "skipped show() (the cursor is already moved out): " .. vifm.fnamemodify(curr_path, ":t"), info)
     return
   end
 
@@ -289,67 +288,14 @@ local function preview(info)
     return
   end
 
-  -- if M.PREV_PATH == info.path then
-  --   M.log("info", "same path. abort.", info)
-  --   M.log("function", "(out ) preview()", info)
-  --   return
-  -- end
-  -- if M.REMOTE then
-  --   M.log("info", "remote is running. abort.", info)
-  --   M.log("function", "(out ) preview()", info)
-  --   return
-  -- end
-
-  -- sleep(config.preview.delay / 1000) -- DEBUG: REMOVE
-  -- vifm.sb.info(os.time())
-
   -- Generate for current file
-  M.generate(info, function(_info) show(_info) end) -- DEBUG: ⭐️ ここを `vifm -remote -c ""` にするのでは？
-
-  -- -- [Async version] Generate for current file
-  -- if not info.remote then
-  --   -- if info.remote then -- DEBUG: 逆にしてみる NG そりゃそうだ
-  --   -- :preview generate {action} {x} {y} {width} {height} {path} {force}
-  --   local vifm_cmd = string.format('preview generate %s %d %d %d %d "%s" %s %s', info.action, info.x, info.y, info.width, info.height, info.path, info.force and "true" or "false", "remote")
-  --   cnt = cnt + 1
-  --   -- vifm_cmd = string.format("echo '%d'", cnt) -- NG 無限ループ
-  --   -- vifm_cmd = string.format("!touch '/Users/rio/.cache/vifm/preview/test-%d'", cnt) -- NG 無限ループなのは一緒
-  --   -- vifm_cmd = "" -- DEBUG: これだと無限ループしない(＆ちらつかない)。なので、自動的な画面の再描画が原因っぽい。
-  --   M.log("info", "vifm_cmd: " .. vifm_cmd, info)
-  --   local async_cmd = string.format("sleep %.3f; vifm --server-name %s --remote -c '%s'", config.preview.delay / 1000, M.SERVER_NAME, vifm_cmd)
-  --   M.log("info", "async_cmd: " .. async_cmd, info)
-  --   vifm.startjob({
-  --     cmd = async_cmd,
-  --     description = "delayed generate() & show()",
-  --   })
-  --   M.log("info", "delayed generate() & show() is set.", info)
-  --
-  --   -- Generate for all files in current dir
-  --   local cwd = vifm.currview().cwd
-  --   M.log("info", "cwd = '" .. cwd .. "'", info)
-  --   info.path = cwd
-  --   -- if not info.remote then -- DEBUG: remote 呼び出し時を回避してみたが、そもそも fileviewer 側からの call なら info.remote は nil
-  --   M.generate_all(info) -- DEBUG: ここは async にしなくていいのか？ 諸々のチェックで、多少の UI ブロッキングはしているぞ？
-  --   -- end
-  --   --
-  --   --
-  --   -- ⭐️⭐️⭐️ むりっぽい。難しすぎる。あとは、bash スクリプトを & で実行するかな。 (ただしキャンセル出来ない？)
-  --   -- fileviewer からの関数で、$VIFM_CURR_FILEPATH に保存しておき、それを bash で一致不一致をチェックするか？
-  --
-  --   -- if info.remote then -- remote として呼び出された時は、ここで REMOTE をオフにする
-  --   --   M.REMOTE = false
-  --   -- else -- fileviewer から呼び出された場合は、REMOTE をオンにする (上記でasyncコマンドセット済みだから)
-  --   --   M.REMOTE = true
-  --   -- end
-  -- end
-  --
-  -- M.PREV_PATH = info.path
+  M.generate(info, function(_info) show(_info) end)
 
   -- Generate for all files in current dir
   local cwd = vifm.currview().cwd
   M.log("info", "cwd = '" .. cwd .. "'", info)
   info.path = cwd
-  if not info.remote then M.generate_all(info) end
+  M.generate_all(info)
 
   M.log("function", "(out) preview()", info)
 end
@@ -366,13 +312,10 @@ end
 vifm.addhandler({
   name = "preview",
   handler = function(info)
-    -- vifm.sb.info("info: " .. util.inspect(info)) -- TEST:
     -- Re-format info table
     info.subcmd = "preview"
     info.action = info.command:match("^#" .. M.PLUGIN_NAME .. "#preview (%S+)")
     info.force = false
-    info.remote = false -- DEBUG: ほんとにこれ？ async
-    -- vifm.sb.info(util.inspect(info))
     preview(info)
   end,
 })
@@ -380,7 +323,6 @@ vifm.addhandler({
 vifm.addhandler({
   name = "clear",
   handler = function(info)
-    if info.remote then return end -- DEBUG: ほんとにこれ？ async | clear はさぁ、fileviewer からしか呼ばれないのよ。info.remote は nil なの常に。意味なし
     info = {
       subcmd = "clear",
       action = "-",
@@ -388,30 +330,6 @@ vifm.addhandler({
     clear(info)
   end,
 })
-
--- TODO: NO NEED to set as handler for them
--- vifm.addhandler({
---   name = "refresh",
---   handler = function(info)
---     info = {
---       subcmd = "refresh",
---       action = "-",
---     }
---     refresh(info)
---   end,
--- })
---
--- vifm.addhandler({
---   name = "delete",
---
---   handler = function(info)
---     info = {
---       subcmd = "delete",
---       action = "-",
---     }
---     delete(info)
---   end,
--- })
 
 -- ╭───────────────────────────────────────────────────────────────╮
 -- │                      Setup vifm command                       │
@@ -431,10 +349,9 @@ vifm.cmds.add({
     end
     info.subcmd = info.argv[1]
     M.log("command", "(in ) preview", info)
-    -- vifm.sb.info("info: " .. util.inspect(info)) -- TEST:
     if info.subcmd == "generate" then -- Asynchronously called by `fileviewer` in vifmrc
-      -- :preview generate {action} {x} {y} {width} {height} {path} {force} {remote}
-      --          #1       #2       #3  #4  #5      #6       #7     #8      #9
+      -- :preview generate {action} {x} {y} {width} {height} {path} {force}
+      --          #1       #2       #3  #4  #5      #6       #7     #8
       info.subcmd = info.argv[1]
       info.action = info.argv[2]
       info.x = info.argv[3]
@@ -443,10 +360,8 @@ vifm.cmds.add({
       info.height = info.argv[6]
       info.path = util.unquote(info.argv[7])
       info.force = info.argv[8]
-      info.remote = info.argv[9] == "remote" and true or false
       info.tty = M.TTY
       M.generate(info, function() show(info) end)
-      -- M.generate(info, function() local a = 1 end)
     elseif info.subcmd == "refresh" then
       info.action = "-"
       refresh(info)

@@ -1,6 +1,6 @@
 local config = {
   cache = {
-    enabled = true, -- TODO: cache 無し、の場合の if 分岐を実装！ (generate 時？) dst パスの取得も分岐しなくちゃ！
+    enabled = true, -- TODO: Implement a conditional branch for caching (or in generate()?); should switch how the dst path is resolved.
     dir = os.getenv("HOME") .. "/.cache/vifm/preview", -- WARN: Be carefule to set this. `:preview delete` command will execute `rm -rf` in this dir
     hash_cmd = "shasum", -- or "shasum256"
   },
@@ -13,7 +13,7 @@ local config = {
   command = {
     show = "kitten icat --clear --stdin=no --place=%{width}x%{height}@%{x}x%{y} --scale-up --transfer-mode=file '%{dst}' >%{tty} <%{tty}",
     clear = "kitten icat --clear --silent >%{tty} <%{tty}",
-  }, -- TODO: 起動時に cmd.show, cmd.clear が無ければこれを自動コピーするか？
+  }, -- TODO: Copy cmd.show, cmd.clear to each actions on startup?
 
   preview = {
     delay = 200, -- ms
@@ -22,13 +22,13 @@ local config = {
   actions = {
     -- Image
     image = {
-      patterns = { "*.bmp", "*.jpg", "*.jpeg", "*.png", "*.xpm", "*.avif", "*.webp", "*.heic" }, -- TODO: #preview.vifm#preview image "<image/*>" として受けるか？
-      cmd = { -- TODO: この形式に変更！！！
+      patterns = "*.bmp,*.jpg,*.jpeg,*.png,*.xpm,*.avif,*.webp,*.heic", -- TODO: Accepts "<image/*>" and "*.bmp,*.jpg" text
+      cmd = { -- TODO: Change to this style !!!
         generate = "",
         show = "",
         clear = "",
       },
-      preview_ext = "jpg", -- 変更ここまで
+      preview_ext = "jpg",
       generate = {
         cmd = "magick '%{src}' -colorspace sRGB -resize 600x600 -quality 80 '%{dst}'",
         ext = "jpg",
@@ -36,7 +36,7 @@ local config = {
     },
     -- Gif
     gif = {
-      patterns = { "*.gif" },
+      patterns = "*.gif",
       generate = {
         cmd = "magick '%{src}' -coalesce -resize 200x200 -background none -layers optimize '%{dst}'",
         ext = "gif",
@@ -44,7 +44,7 @@ local config = {
     },
     -- Video
     video = {
-      patterns = { "*.avi", "*.mp4", "*.wmv", "*.dat", "*.3gp", "*.ogv", "*.mkv", "*.mpg", "*.mpeg", "*.vob", "*.fl[icv]", "*.m2v", "*.mov", "*.webm", "*.ts", "*.mts", "*.m4v", "*.r[am]", "*.qt", "*.divx", "*.as[fx]" },
+      patterns = "*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],*.qt,*.divx,*.as[fx]",
       generate = {
         cmd = "ffmpegthumbnailer -s 640 -q 8 -t 10 -i '%{src}' -o '%{dst}'",
         ext = "jpg",
@@ -52,9 +52,7 @@ local config = {
     },
     -- PDF
     pdf = {
-      patterns = {
-        "*.pdf",
-      },
+      patterns = "*.pdf",
       generate = {
         cmd = 'magick -colorspace sRGB -density 120 "%{src}[0]" -flatten -resize 600x600 -quality 80 "%{dst}"',
         ext = "jpg",
