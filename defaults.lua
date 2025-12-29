@@ -1,7 +1,7 @@
 local config = {
   cache = {
-    enabled = true, -- TODO: Implement a conditional branch for caching (or in generate()?); should switch how the dst path is resolved.
-    dir = os.getenv("HOME") .. "/.cache/vifm/preview", -- WARN: Be carefule to set this. `:preview delete` command will execute `rm -rf` in this dir
+    enabled = true, -- Not implemented yet
+    dir = os.getenv("HOME") .. "/.cache/vifm/preview", -- WARN: `:preview delete` command will execute `rm -rf` in this dir
     hash_cmd = "shasum", -- or "shasum256"
   },
 
@@ -11,22 +11,25 @@ local config = {
   },
 
   common = {
-    cmd = { -- TODO: Copy cmd.show, cmd.clear to each actions on startup? Then use it?
+    cmd = {
       show = "kitten icat --clear --stdin=no --place=%{width}x%{height}@%{x}x%{y} --scale-up --transfer-mode=file '%{dst}' >%{tty} <%{tty}",
       clear = "kitten icat --clear --silent >%{tty} <%{tty}",
     },
   },
 
   preview = {
-    delay = 200, -- ms
+    delay = 200, -- Not implemented yet
   },
 
   actions = {
     -- Image
     image = {
-      patterns = "*.bmp,*.jpg,*.jpeg,*.png,*.xpm,*.avif,*.webp,*.heic", -- TODO: Accepts "<image/*>" and "*.bmp,*.jpg" text
+      patterns = "*.bmp,*.jpg,*.jpeg,*.png,*.xpm,*.avif,*.webp,*.heic", -- Set the same patterns as fileviewr
       cmd = {
         generate = "magick '%{src}' -colorspace sRGB -resize 600x600 -quality 80 '%{dst}'",
+        -- Action-specific {show|clear} command are available. Fallback to `common.cmd.{show|clear}` if nil.
+        -- show = "",
+        -- clear = "",
       },
       cache = {
         ext = "jpg",
