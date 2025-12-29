@@ -15,7 +15,8 @@ Main features
 - Async generating for current dir
 - Re-generate preview file when the current image/video/pdf/e.t.c. file is updated
 - Add custom actions (e.g. gif, sound)
-- Modifiable graphic protocol commands
+- Modifiable graphic protocol command
+- Modifiable {generate|show|clear} command
 
 Additional
 - (For nvim) Correct the %px %py position in nvim plugins or floating window
@@ -78,7 +79,7 @@ USAGE:
 
 ARGS:
    subcmd    : preview | clear | refresh | delete
-   action    : image | video | pdf | e.t.c (only `preview` can accept `action` arg)
+   action    : image | video | pdf | e.t.c (only `preview` and `clear` can accept `action` arg)
 ```
 
 EXAMPLE CODE:
@@ -88,7 +89,7 @@ Generate a preview file for image action:
 fileviewer {*.bmp,*.jpg,*.jpeg,*.png,*.xpm,*.avif,*.webp,*.heic},<image/*>
    \ #preview.vifm#preview image
    \ %pc
-   \ #preview.vifm#clear
+   \ #preview.vifm#clear image
 
 " `%c %px %py %pw %ph` are given by `info` table arg to lua function. So it's not necessary to set here.
 " `%pc` is just a delimiter, between displaying command and cleaning command.
@@ -156,33 +157,36 @@ defaults.lua:
 ```lua
 local config = {
   cache = {
-    enabled = true, -- TODO: Implement a conditional branch for caching (or in generate()?); should switch how the dst path is resolved.
-    dir = os.getenv("HOME") .. "/.cache/vifm/preview", -- WARN: Be carefule to set this. `:preview delete` command will execute `rm -rf` in this dir
+    enabled = true, -- Not implemented yet
+    dir = os.getenv("HOME") .. "/.cache/vifm/preview", -- WARN: `:preview delete` command will execute `rm -rf` in this dir
     hash_cmd = "shasum", -- or "shasum256"
   },
 
   log = {
-    enabled = true,
+    enabled = false,
     path = os.getenv("HOME") .. "/.local/state/vifm/preview.log",
   },
 
   common = {
-    cmd = { -- TODO: Copy cmd.show, cmd.clear to each actions on startup? Then use it?
+    cmd = {
       show = "kitten icat --clear --stdin=no --place=%{width}x%{height}@%{x}x%{y} --scale-up --transfer-mode=file '%{dst}' >%{tty} <%{tty}",
       clear = "kitten icat --clear --silent >%{tty} <%{tty}",
     },
   },
 
   preview = {
-    delay = 200, -- ms
+    delay = 200, -- Not implemented yet
   },
 
   actions = {
     -- Image
     image = {
-      patterns = "*.bmp,*.jpg,*.jpeg,*.png,*.xpm,*.avif,*.webp,*.heic", -- TODO: Accepts "<image/*>" and "*.bmp,*.jpg" text
+      patterns = "*.bmp,*.jpg,*.jpeg,*.png,*.xpm,*.avif,*.webp,*.heic",
       cmd = {
         generate = "magick '%{src}' -colorspace sRGB -resize 600x600 -quality 80 '%{dst}'",
+        -- Action-specific {show|clear} command are available. Fallback to `common.cmd.{show|clear}` if nil.
+        -- show = "",
+        -- clear = "",
       },
       cache = {
         ext = "jpg",
@@ -264,25 +268,25 @@ Add this code to `~/.config/vifm/vifmrc`
 fileviewer { *.gif }
    \ #preview.vifm#preview gif
    \ %pc
-   \ #preview.vifm#clear
+   \ #preview.vifm#clear gif
 
 " For images
 fileviewer <image/*>
    \ #preview.vifm#preview image
    \ %pc
-   \ #preview.vifm#clear
+   \ #preview.vifm#clear image
 
 " For videos
 fileviewer <video/*>
    \ #preview.vifm#preview video
    \ %pc
-   \ #preview.vifm#clear
+   \ #preview.vifm#clear video
 
 " For PDFs
 fileviewer { *.pdf }
    \ #preview.vifm#preview pdf
    \ %pc
-   \ #preview.vifm#clear
+   \ #preview.vifm#clear pdf
 
 " To get faster previewing, add this line
 set previewoptions+=graphicsdelay:0
@@ -465,6 +469,8 @@ Resolved by [#4-optional-initlua-in-nvim](#4-optional-initlua-in-nvim).
 
 ## TODO
 
+- [ ] Implement a conditional branch for caching (or in generate()?). (Should switch how the dst path is resolved)
+- [ ] Accepts both `<image/*>` and `*.bmp,*.jpg` text
 - [ ] Supports other terminal apps
 - [ ] Supports other terminal graphics protocols
 - [ ] Wanna support async cursor movement and preview (Needs `coroutine` enabled in vifm lua)

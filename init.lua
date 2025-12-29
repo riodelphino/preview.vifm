@@ -1,5 +1,21 @@
 local M = {}
 
+---@class preview.Info
+---@field command string?
+---@field args table?
+---@field argv table?
+---@field subcmd string?
+---@field action string?
+---@field path string?
+---@field x number?
+---@field y number?
+---@field width number?
+---@field height number?
+---@field force boolean?
+---@field src string? -- = path
+---@field dst string?
+---@field tty string?
+
 -- Get/Set statics
 M.PLUGIN_NAME = "preview.vifm"
 M.TTY = os.getenv("VIFM_PREVIEW_TTY")
@@ -29,7 +45,7 @@ end
 
 ---@param category string
 ---@param message string
----@param info table?
+---@param info preview.Info?
 function M.log(category, message, info)
   local len = {
     subcmd = 8,
@@ -46,7 +62,7 @@ function M.log(category, message, info)
   end
 end
 
----@param info table
+---@param info preview.Info
 ---@return table command_parts
 local function get_info_command_parts(info)
   local subcmd, action, rest
@@ -182,7 +198,7 @@ function M.generate_all(info)
     M.set_state(cwd, action_name, "locked")
 
     local files = util.glob(cwd, action.patterns)
-    M.log("files", util.inspect(files, 0, false):gsub("%[%d*%] = ", ""), _info)
+    M.log("files", util.inspect(files, 0, false), _info)
     M.log("loop", action.patterns, _info)
 
     for _, file in ipairs(files) do
@@ -200,7 +216,10 @@ end
 local function clear(info)
   M.log("function", "(in ) clear()", info)
   info.tty = M.TTY
-  local cmd = config.common.cmd.clear
+
+  local action = config.actions[info.action]
+  local cmd = action.cmd.clear or config.common.cmd.clear -- Prefer action-specific clear ommand. Fallback to common one
+
   cmd = util.get_cmd(cmd, info)
   M.log("command", cmd, info)
   util.execute(cmd)
@@ -215,12 +234,15 @@ local function show(info)
     return
   end
 
-  local cmd = config.common.cmd.show
+  local action = config.actions[info.action]
+  local cmd = action.cmd.show or config.common.cmd.show -- Prefer action-specific show command. Fallback to common one
+
   local env = util.get_environment()
   if env.nvim then
     info.x = info.x + os.getenv("VIFM_PREVIEW_WIN_X") + os.getenv("VIFM_PREVIEW_WIN_BORDER_WIDTH")
     info.y = info.y + os.getenv("VIFM_PREVIEW_WIN_Y") + os.getenv("VIFM_PREVIEW_WIN_BORDER_WIDTH")
   end
+
   M.log("info", "info = " .. util.inspect(info, 0, false), info)
   cmd = util.get_cmd(cmd, info)
   M.log("command", cmd, info)
@@ -298,7 +320,7 @@ vifm.addhandler({
   handler = function(info)
     -- Re-format info table
     info.subcmd = "preview"
-    info.action = info.command:match("^#" .. M.PLUGIN_NAME .. "#preview (%S+)")
+    info.action = info.command:match("^#" .. M.PLUGIN_NAME .. "#" .. info.subcmd .. " (%S+)")
     info.force = false
     preview(info)
   end,
@@ -307,10 +329,8 @@ vifm.addhandler({
 vifm.addhandler({
   name = "clear",
   handler = function(info)
-    info = {
-      subcmd = "clear",
-      action = "-",
-    }
+    info.subcmd = "clear"
+    info.action = info.command:match("^#" .. M.PLUGIN_NAME .. "#" .. info.subcmd .. " (%S+)")
     clear(info)
   end,
 })

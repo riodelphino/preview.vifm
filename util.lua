@@ -1,13 +1,26 @@
 local M = {}
 
+-- ---@param cmd string
+-- ---@return any
+-- function M.execute(cmd)
+--   local f = io.popen(cmd)
+--   if not f then return nil end
+--   local ret = f:read("*l")
+--   f:close()
+--   return ret
+-- end
+
 ---@param cmd string
----@return any
+---@return table result
 function M.execute(cmd)
   local f = io.popen(cmd)
-  if not f then return nil end
-  local ret = f:read("*l")
+  if not f then return {} end
+  local lines = {}
+  for line in f:lines() do
+    table.insert(lines, line)
+  end
   f:close()
-  return ret
+  return lines
 end
 
 ---@param dst table
@@ -74,44 +87,48 @@ end
 
 function M.get_hash(str, hash_cmd)
   local cmd = string.format('printf %%q "%s" | %s', str, hash_cmd)
-  local ret = M.execute(cmd)
+  local ret = M.execute(cmd)[1]
   return ret:match("^%w+")
 end
 
+---@param str string
+---@param delimiter string
+---@return table splitted
+function M.split(str, delimiter)
+  local regex = string.format("[^%s]+", delimiter)
+  local tbl = {}
+  for part in str:gmatch(regex) do
+    table.insert(tbl, part)
+  end
+  return tbl
+end
+
+---@param str string
+---@return string trimmed
+function M.trim(str) return str:match("^%s*(.-)%s*$") end
+
 ---@param dir string
----@param patterns table|string
+---@param patterns string
 ---@return table files
 function M.glob(dir, patterns)
   local pats = {}
-
-  if type(patterns) == "string" then
-    for p in patterns:gmatch("[^,]+") do
-      pats[#pats + 1] = p:match("^%s*(.-)%s*$")
-    end
-  else
-    pats = patterns
+  for idx, pat in ipairs(M.split(patterns, ",")) do
+    local prefix = idx == 1 and "-name" or "-o -name"
+    pat = M.trim(pat)
+    local line = string.format("%s '%s'", prefix, pat)
+    table.insert(pats, line)
   end
-
-  local result = {}
-  for _, pat in ipairs(pats) do
-    local cmd = string.format('ls -1 "%s"/%s 2>/dev/null', dir, pat)
-    local f = io.popen(cmd)
-    if f then
-      for line in f:lines() do
-        result[#result + 1] = line
-      end
-      f:close()
-    end
-  end
-
-  return result
+  local criteria = table.concat(pats, " ")
+  local cmd = string.format("find '%s' \\( %s \\)", dir, criteria)
+  local files = M.execute(cmd)
+  return files
 end
 
 ---@param path string
 ---@return string? real_path
 function M.realpath(path)
   local cmd = string.format('cd "%s" 2>/dev/null && pwd -P', path)
-  local ret = M.execute(cmd)
+  local ret = M.execute(cmd)[1]
   return ret and ret:gsub("%s+$", "") or path
 end
 
@@ -119,7 +136,7 @@ end
 ---@return boolean
 function M.is_dir(path)
   local cmd = string.format('if [ -d "%s" ]; then echo "true"; else echo "false"; fi', path)
-  local ret = M.execute(cmd)
+  local ret = M.execute(cmd)[1]
   return ret == "true"
 end
 
@@ -128,7 +145,7 @@ end
 function M.get_mtime(path)
   if vifm.exists(path) then
     local cmd = string.format([[stat -f "%%m" "%s" 2>/dev/null || stat -c "%%Y" "%s" 2>/dev/null]], path, path)
-    local ret = M.execute(cmd)
+    local ret = M.execute(cmd)[1]
     return tonumber(ret)
   else
     return 0
