@@ -182,7 +182,7 @@ function M.generate_all(info)
     M.set_state(cwd, action_name, "locked")
 
     local files = util.glob(cwd, action.patterns)
-    M.log("files", util.inspect(files, 0, false):gsub("%[%d*%] = ", ""), _info)
+    M.log("files", util.inspect(files, 0, false), _info)
     M.log("loop", action.patterns, _info)
 
     for _, file in ipairs(files) do

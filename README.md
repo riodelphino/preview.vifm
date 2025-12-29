@@ -162,7 +162,7 @@ local config = {
   },
 
   log = {
-    enabled = true,
+    enabled = false,
     path = os.getenv("HOME") .. "/.local/state/vifm/preview.log",
   },
 
