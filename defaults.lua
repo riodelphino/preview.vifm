@@ -1,6 +1,6 @@
 local config = {
   cache = {
-    enabled = true, -- Not implemented yet
+    enabled = true,
     dir = os.getenv("HOME") .. "/.cache/vifm/preview", -- WARN: `:preview delete` command will execute `rm -rf` in this dir
     hash_cmd = "shasum", -- or "shasum256"
   },
