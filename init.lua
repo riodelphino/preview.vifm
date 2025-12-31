@@ -373,13 +373,6 @@ vifm.cmds.add({
       -- info.force = info.argv[8]
       -- info.tty = M.TTY
       -- M.generate(info, function() show(info) end)
-    elseif info.subcmd == "test" then -- DEBUG:
-      local start = os.clock()
-      vifm.sb.info("start: " .. start)
-      while os.clock() - start < 3 do
-        -- 何もしない（CPUを回し続ける）
-      end
-      vifm.sb.info("end: " .. os.clock())
     end
     M.log("command", "(out) preview", info)
   end,

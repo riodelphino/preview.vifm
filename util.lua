@@ -124,7 +124,6 @@ function M.glob(dir, patterns, maxdepth, mindepth)
   end
   local criteria = table.concat(pats, " ")
   local cmd = string.format("find '%s' -mindepth %d -maxdepth %d \\( %s \\)", dir, mindepth, maxdepth, criteria)
-  vifm.sb.info(cmd)
   local files = M.execute(cmd)
   return files
 end
