@@ -185,7 +185,7 @@ end
 ---@param info table
 function M.generate_all(info)
   M.log("function", "(in ) generate_all()", info)
-  vifm.sb.info("generate_all start: " .. os.clock())
+  -- vifm.sb.info("generate_all start: " .. os.clock()) -- DEBUG:
   local cwd = info.path
 
   local _info = util.deep_copy(info) -- Temporary info
@@ -210,7 +210,7 @@ function M.generate_all(info)
     end
     M.set_state(cwd, action_name, "done")
   end
-  vifm.sb.info("generate_all end: " .. os.clock())
+  -- vifm.sb.info("generate_all end: " .. os.clock()) -- DEBUG:
   M.log("function", "(out) generate_all()", info)
 end
 
