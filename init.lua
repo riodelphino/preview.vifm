@@ -245,6 +245,12 @@ end
 -- clear command
 local function clear(info)
   M.log("function", "(in ) clear()", info)
+  local state = M.get_state(info.path, info.action)
+  if state == "locked" then
+    M.log("info", "Skipped clear for '" .. info.path .. "' (locked)", info)
+    M.log("function", "(out) clear()", info)
+    return
+  end
   info.tty = M.TTY
 
   local action = config.actions[info.action]

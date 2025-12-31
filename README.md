@@ -299,7 +299,7 @@ nnoremap <silent> pd :preview delete<cr>
 let $VIFM_SERVER_NAME = v:servername
 ```
 
-If `image` previewing gets slower than before, try to use this:
+If `image` previewing gets slower than before, try to replace `gif` & `image` actions to this:
 ```vim
 fileviewer <image/*>
    \ kitten icat --transfer-mode=file --silent --scale-up --place=%pwx%ph@$((%px + ${VIFM_PREVIEW_WIN_X:-0} + ${VIFM_PREVIEW_WIN_BORDER_WIDTH:-0}))x$((%py + ${VIFM_PREVIEW_WIN_Y:-0} + ${VIFM_PREVIEW_WIN_BORDER_WIDTH:-0})) %c >$VIFM_PREVIEW_TTY <$VIFM_PREVIEW_TTY &

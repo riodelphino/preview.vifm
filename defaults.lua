@@ -37,6 +37,7 @@ local config = {
     gif = {
       patterns = "*.gif",
       cmd = { generate = "magick '%{src}' -coalesce -resize 200x200 -background none -layers optimize '%{dst}'" },
+      -- cmd = { generate = "cp '%{src}' '%{dst}'" }, -- DEBUG: Replace `cache.enabled = false`
       cache = { ext = "gif" },
     },
     -- Video
