@@ -1,6 +1,6 @@
 local M = {}
 
----@class preview.Info
+---@class vifm.preview.Info
 ---@field command string?
 ---@field args table?
 ---@field argv table?
@@ -45,7 +45,7 @@ end
 
 ---@param category string
 ---@param message string
----@param info preview.Info?
+---@param info vifm.preview.Info
 function M.log(category, message, info)
   local len = {
     subcmd = 8,
@@ -62,7 +62,7 @@ function M.log(category, message, info)
   end
 end
 
----@param info preview.Info
+---@param info vifm.preview.Info
 ---@return table command_parts
 local function get_info_command_parts(info)
   local subcmd, action, rest
@@ -142,7 +142,7 @@ function M.get_state(path, action_name)
   end
 end
 
----@param info table
+---@param info vifm.preview.Info
 ---@param cb function?
 function M.generate(info, cb)
   -- Get generate command
@@ -182,10 +182,10 @@ function M.generate(info, cb)
 end
 
 ---Generate previews for all files in dir
----@param info table
+---@param info vifm.preview.Info
 function M.generate_all(info)
   M.log("function", "(in ) generate_all()", info)
-  local cwd = info.path
+  local cwd = info.path ---@type string
 
   local _info = util.deep_copy(info) -- Temporary info
   for action_name, action in pairs(config.actions) do
@@ -268,7 +268,7 @@ local function refresh(info)
 end
 
 ---Delete all cache files
----@param info table
+---@param info vifm.preview.Info
 local function delete(info)
   M.log("function", "(in ) delete()", info)
   local cmd = string.format("rm -rf %s/*", config.cache.dir)
@@ -280,7 +280,7 @@ local function delete(info)
 end
 
 ---generate() -> show(), additionally run generate_all()
----@param info table
+---@param info vifm.preview.Info
 local function preview(info)
   log_info = get_info_command_parts(info)
   M.log("function", "(in ) preview()", info)

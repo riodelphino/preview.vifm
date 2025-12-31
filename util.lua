@@ -158,7 +158,7 @@ end
 
 ---Replace placeholders
 ---@param cmd string
----@param info table
+---@param info vifm.preview.Info
 ---@return string cmd
 function M.get_cmd(cmd, info)
   for k, v in pairs(info) do
