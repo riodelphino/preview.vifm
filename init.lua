@@ -152,17 +152,25 @@ function M.generate(info, cb)
 
   -- Check if generation is necessary
   if action.cmd.generate == "" then return end
-  local preview_exists = vifm.exists(info.dst)
-  if preview_exists and not info.force then -- TODO: Add state check ?
-    M.log("info", "Skipped preview generation for '" .. info.path .. "'", info)
+  local state = M.get_state(info.path, info.action)
+  -- Check state
+  if state == "done" and not info.force then
+    M.log("info", "Skipped preview generation for '" .. info.path .. "' (done)", info)
     if type(cb) == "function" then cb(info) end
     return
+  elseif state == "locked" then
+    M.log("info", "Skipped preview generation for '" .. info.path .. "' (locked)", info)
+    return
   end
+  -- Check mtime
   local preview_mtime = util.get_mtime(info.dst)
   local source_mtime = util.get_mtime(info.path)
   preview_mtime = preview_mtime or 0
   local preview_older = preview_mtime < source_mtime
   if not preview_older and not info.force then return end
+
+  -- Set state
+  M.set_state(info.path, info.action, "locked")
 
   -- Get cmd
   local args = {
@@ -179,6 +187,9 @@ function M.generate(info, cb)
   else
     util.execute(cmd .. " >/dev/null 2>&1 &") -- Async
   end
+
+  -- Set state
+  M.set_state(info.path, info.action, "done")
 end
 
 ---Generate previews for all files in dir
