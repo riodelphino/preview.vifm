@@ -299,6 +299,17 @@ nnoremap <silent> pd :preview delete<cr>
 let $VIFM_SERVER_NAME = v:servername
 ```
 
+If `image` previewing gets slower than before, try to use this:
+```vim
+fileviewer <image/*>
+   \ kitten icat --transfer-mode=file --silent --scale-up --place=%pwx%ph@$((%px + ${VIFM_PREVIEW_WIN_X:-0} + ${VIFM_PREVIEW_WIN_BORDER_WIDTH:-0}))x$((%py + ${VIFM_PREVIEW_WIN_Y:-0} + ${VIFM_PREVIEW_WIN_BORDER_WIDTH:-0})) %c >$VIFM_PREVIEW_TTY <$VIFM_PREVIEW_TTY &
+   \ %pc
+   \ kitten icat --transfer-mode=file --clear --silent >$VIFM_PREVIEW_TTY <$VIFM_PREVIEW_TTY &
+```
+This is a naked `fileviewer` code without `preview.vifm`, but includes the position & tty optimization for nvim.
+
+Other actions will be faster than naked `fileviewer`.
+
 ### 4. (Optional) init.lua in nvim
 
 If you use vifm on nvim, follow this step.
