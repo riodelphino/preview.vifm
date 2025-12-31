@@ -19,7 +19,7 @@ local M = {}
 -- Get/Set statics
 M.PLUGIN_NAME = "preview.vifm"
 M.TTY = os.getenv("VIFM_PREVIEW_TTY")
-M.SERVER_NAME = os.getenv("VIFM_SERVER_NAME")
+M.SERVER_NAME = os.getenv("VIFM_SERVER_NAME") -- Get v:servername (Need $VIFM_SERVER_NAME is set in vifmrc)
 
 local base = os.getenv("VIFM") .. "/plugins/preview.vifm/?.lua;"
 package.path = base .. package.path
@@ -373,6 +373,13 @@ vifm.cmds.add({
       -- info.force = info.argv[8]
       -- info.tty = M.TTY
       -- M.generate(info, function() show(info) end)
+    elseif info.subcmd == "test" then -- DEBUG:
+      local start = os.clock()
+      vifm.sb.info("start: " .. start)
+      while os.clock() - start < 3 do
+        -- 何もしない（CPUを回し続ける）
+      end
+      vifm.sb.info("end: " .. os.clock())
     end
     M.log("command", "(out) preview", info)
   end,

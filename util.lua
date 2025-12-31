@@ -109,8 +109,12 @@ function M.trim(str) return str:match("^%s*(.-)%s*$") end
 
 ---@param dir string
 ---@param patterns string
+---@param mindepth number?
+---@param maxdepth number?
 ---@return table files
-function M.glob(dir, patterns)
+function M.glob(dir, patterns, maxdepth, mindepth)
+  mindepth = mindepth or 0
+  maxdepth = maxdepth or 1
   local pats = {}
   for idx, pat in ipairs(M.split(patterns, ",")) do
     local prefix = idx == 1 and "-name" or "-o -name"
@@ -119,7 +123,8 @@ function M.glob(dir, patterns)
     table.insert(pats, line)
   end
   local criteria = table.concat(pats, " ")
-  local cmd = string.format("find '%s' \\( %s \\)", dir, criteria)
+  local cmd = string.format("find '%s' -mindepth %d -maxdepth %d \\( %s \\)", dir, mindepth, maxdepth, criteria)
+  vifm.sb.info(cmd)
   local files = M.execute(cmd)
   return files
 end

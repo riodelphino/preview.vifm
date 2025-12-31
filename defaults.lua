@@ -31,39 +31,25 @@ local config = {
         -- show = "",
         -- clear = "",
       },
-      cache = {
-        ext = "jpg",
-      },
+      cache = { ext = "jpg" },
     },
     -- Gif
     gif = {
       patterns = "*.gif",
-      cmd = {
-        generate = "magick '%{src}' -coalesce -resize 200x200 -background none -layers optimize '%{dst}'",
-      },
-      cache = {
-        ext = "gif",
-      },
+      cmd = { generate = "magick '%{src}' -coalesce -resize 200x200 -background none -layers optimize '%{dst}'" },
+      cache = { ext = "gif" },
     },
     -- Video
     video = {
       patterns = "*.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],*.qt,*.divx,*.as[fx]",
-      cmd = {
-        generate = "ffmpegthumbnailer -s 640 -q 8 -t 10 -i '%{src}' -o '%{dst}'",
-      },
-      cache = {
-        ext = "jpg",
-      },
+      cmd = { generate = "ffmpegthumbnailer -s 640 -q 8 -t 10 -i '%{src}' -o '%{dst}'" },
+      cache = { ext = "jpg" },
     },
     -- PDF
     pdf = {
       patterns = "*.pdf",
-      cmd = {
-        generate = 'magick -colorspace sRGB -density 120 "%{src}[0]" -flatten -resize 600x600 -quality 80 "%{dst}"',
-      },
-      cache = {
-        ext = "jpg",
-      },
+      cmd = { generate = 'magick -colorspace sRGB -density 120 "%{src}[0]" -flatten -resize 600x600 -quality 80 "%{dst}"' },
+      cache = { ext = "jpg" },
     },
   },
 }
