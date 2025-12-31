@@ -150,16 +150,25 @@ function M.generate(info, cb)
   local action = config.actions[info.action]
   info.dst = util.get_cache_filepath(info.path, config.cache.dir, action.cache.ext, hash_cmd)
 
-  -- Check if generation is necessary
-  if action.cmd.generate == "" then return end
+  -- Check cmd
+  if action.cmd.generate == "" then
+    M.log("error", string.format("Set '%s.cmd.generate'. (It's nil or ''.)", info.action), info)
+    return
+  end
+  -- Check if cache is enabled
+  if not config.cache.enabled then
+    M.log("error", string.format("Caching is disabled by 'config.cache.enabled'", info.action), info)
+    if type(cb) == "function" then cb(info) end
+    return
+  end
   local state = M.get_state(info.path, info.action)
   -- Check state
   if state == "done" and not info.force then
-    M.log("info", "Skipped preview generation for '" .. info.path .. "' (done)", info)
+    M.log("info", "Skipped generation for '" .. info.path .. "' (done)", info)
     if type(cb) == "function" then cb(info) end
     return
   elseif state == "locked" then
-    M.log("info", "Skipped preview generation for '" .. info.path .. "' (locked)", info)
+    M.log("info", "Skipped generation for '" .. info.path .. "' (locked)", info)
     return
   end
   -- Check mtime
@@ -167,7 +176,11 @@ function M.generate(info, cb)
   local source_mtime = util.get_mtime(info.path)
   preview_mtime = preview_mtime or 0
   local preview_older = preview_mtime < source_mtime
-  if not preview_older and not info.force then return end
+  if not preview_older and not info.force then
+    return
+  else
+    M.log("info", "Update preview for '" .. info.path .. "' (preview older)", info)
+  end
 
   -- Set state
   M.set_state(info.path, info.action, "locked")
@@ -196,6 +209,12 @@ end
 ---@param info vifm.preview.Info
 function M.generate_all(info)
   M.log("function", "(in ) generate_all()", info)
+  -- Check if cache is enabled
+  if not config.cache.enabled then
+    M.log("error", string.format("Caching is disabled by 'config.cache.enabled'", info.action), info)
+    M.log("function", "(out) generate_all()", info)
+    return
+  end
   local cwd = info.path ---@type string
 
   local _info = util.deep_copy(info) -- Temporary info
@@ -255,6 +274,9 @@ local function show(info)
   end
 
   M.log("info", "info = " .. util.inspect(info, 0, false), info)
+  if not config.cache.enabled then
+    info.dst = info.path -- Use source file to preview
+  end
   cmd = util.get_cmd(cmd, info)
   M.log("command", cmd, info)
   util.execute(cmd)
