@@ -429,6 +429,25 @@ The w,h are for future expansion.
   - [ ] `clear` not works in `tmux + nvim + vifm`. It causes overlaping images.
   - [ ] If `notify.nvim` is shown in nvim, the vifm preview images are disturbed on floating window.
 
+### Async is not available smoothly in vifm
+
+`coroutine` is not implemented in vifm lua.
+
+So async is available only with:
+
+1. `vifm.jobstart()` and `vifm --server-name {servername} --remote -c '{vifm_command}'`
+
+x Accepts only vifm command (not lua or sh script).  
+x And cause infinity loop. (vifm command with `--remote -c` cause redrawing the vifm, then the `filebviewer` is triggerd again, ...)  
+o `:preview preview` vifm command for this purporse is already implemented.  
+o Using `--remote-expr` instead resolves this? (It just evaluates the command for getting values.)
+
+2. sh script with `&`
+
+x sh can include only limitted capability compared to lua.
+o Setting `$VIFM_CURR_PATH` env with `util.get_current_filepath()` in `preview()` might bridge the above gap.  
+x And the cursor movement will no longer be updated. (Are there any functions or command to update cursor and vifm ?)
+
 
 ## Resolved Issues
 
@@ -469,11 +488,12 @@ Resolved by [#4-optional-initlua-in-nvim](#4-optional-initlua-in-nvim).
 
 ## TODO
 
-- [ ] Implement a conditional branch for caching (or in generate()?). (Should switch how the dst path is resolved)
+- [ ] Implement `config.cache.enabled`. (Switch the `dst` path)
 - [ ] Accepts both `<image/*>` and `*.bmp,*.jpg` text
+- [ ] Prevent previews from running multiple times
 - [ ] Supports other terminal apps
 - [ ] Supports other terminal graphics protocols
-- [ ] Wanna support async cursor movement and preview (Needs `coroutine` enabled in vifm lua)
+- [ ] Wanna support async cursor movement and preview (Needs `coroutine` enabled in vifm lua.) See [Known issues](#async-is-not-available-smoothly-in-vifm)
 
 ## Related Projects
 
