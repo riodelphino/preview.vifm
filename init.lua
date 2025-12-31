@@ -185,6 +185,7 @@ end
 ---@param info table
 function M.generate_all(info)
   M.log("function", "(in ) generate_all()", info)
+  vifm.sb.info("generate_all start: " .. os.clock())
   local cwd = info.path
 
   local _info = util.deep_copy(info) -- Temporary info
@@ -209,6 +210,7 @@ function M.generate_all(info)
     end
     M.set_state(cwd, action_name, "done")
   end
+  vifm.sb.info("generate_all end: " .. os.clock())
   M.log("function", "(out) generate_all()", info)
 end
 
@@ -375,16 +377,52 @@ vifm.cmds.add({
       -- M.generate(info, function() show(info) end)
     elseif info.subcmd == "test" then -- DEBUG:
       local start = os.clock()
-      vifm.sb.info("start: " .. start)
+      -- vifm.sb.info("start: " .. start)
       while os.clock() - start < 3 do
         -- 何もしない（CPUを回し続ける）
       end
-      vifm.sb.info("end: " .. os.clock())
+      -- vifm.sb.info("end: " .. os.clock())
+      util.execute("touch '/Users/rio/.cache/vifm/preview/test'")
     end
     M.log("command", "(out) preview", info)
   end,
   minargs = 0,
   maxargs = -1,
 })
+
+-- -- -- local vifm_cmd = 'expand("%d")'
+-- -- -- local vifm_cmd = "echo v:servername"
+-- -- local vifm_cmd = "echo 'dakarayo'"
+-- -- local cmd = string.format("vifm --server-name %s --remote-expr '%s'", M.SERVER_NAME, vifm_cmd)
+-- -- local job = {
+-- --   cmd = cmd,
+-- --   description = "   test    ",
+-- --   iomode = "r",
+-- --   mergestreams = true,
+-- --   visible = true,
+-- --   onexit = function(job)
+-- --     -- exit code
+-- --     local code = job:exitcode()
+-- --
+-- --     -- 標準出力（iomode = "r" が前提）
+-- --     local output = job:stdout()
+-- --
+-- --     vifm.sb.info(string.format("job finished: code=%s, output=%s", tostring(code), output or "nil"))
+-- --   end,
+-- -- }
+-- -- vifm.startjob(job)
+--
+-- local vifm_cmd = "preview test"
+-- -- local cmd = string.format("vifm --server-name %s --remote-expr '%s'", M.SERVER_NAME, vifm_cmd)
+-- local cmd = string.format("vifm --server-name %s --remote -c '%s'", M.SERVER_NAME, vifm_cmd)
+-- local job = {
+--   cmd = cmd,
+--   description = "   test    ",
+--   iomode = "",
+--   mergestreams = true,
+--   visible = true,
+--   onexit = function(job) vifm.sb.info("exit") end,
+-- }
+-- vifm.startjob(job)
 
 return M
