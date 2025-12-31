@@ -120,6 +120,9 @@ ln -s preview.vifm/preview preview
 
 # Copy the config
 cp preview.vifm/preview.conf.default.vim ../preview.conf.vim
+
+# ??? need this?
+export PATH=$VIFM/scripts;$PATH
 ```
 
 ## Setup
