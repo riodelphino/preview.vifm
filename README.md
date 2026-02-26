@@ -34,7 +34,7 @@ Additional
 
 Currently ensured to work with:
 - MacOS
-   - kitty
+   - kitty & ghostty
       - ✓ vifm directly use (Need to set `TERM` environmental variable)
       - nvim
          - △ [fm-nvim](https://github.com/is0n/fm-nvim) (See [Known Issues](#known-issues))
